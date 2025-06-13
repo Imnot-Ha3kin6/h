@@ -1,3 +1,5 @@
+-- cool beanz menu v2 (rayfield version) 🫘
+
 local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/main/source.lua"))()
 
 local Window = Rayfield:CreateWindow({
@@ -22,6 +24,7 @@ local GamesTab = Window:CreateTab("Games")
 
 -- Scripts Tab
 ScriptsTab:CreateSection("Universal")
+
 ScriptsTab:CreateButton({
     Name = "Infinite Yield",
     Description = "admin go brrrr",
@@ -30,8 +33,17 @@ ScriptsTab:CreateButton({
     end,
 })
 
+ScriptsTab:CreateButton({
+    Name = "Quotas Hub",
+    Description = "Script hub by Insertl",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Insertl/QuotasHub/main/BETAv1.3"))()
+    end,
+})
+
 -- Games Tab
 GamesTab:CreateSection("Arsenal")
+
 GamesTab:CreateButton({
     Name = "Arsenal Script",
     Description = "aimbot + esp + more",
@@ -42,7 +54,6 @@ GamesTab:CreateButton({
 
 GamesTab:CreateSection("TSB")
 
-
 GamesTab:CreateButton({
     Name = "Death Counter Identifier",
     Description = "Check your death counter (TSB)",
@@ -50,7 +61,6 @@ GamesTab:CreateButton({
         loadstring(game:HttpGet("https://raw.githubusercontent.com/louismich4el/ItsLouisPlayz-Scripts/main/TSB%20Death%20Counter%20Identifier.lua"))()
     end,
 })
-
 
 GamesTab:CreateButton({
     Name = "Instant Transmission",
@@ -90,6 +100,7 @@ GamesTab:CreateButton({
 })
 
 GamesTab:CreateSection("Troll / Cursing")
+
 GamesTab:CreateButton({
     Name = "Better Bypasser",
     Description = "Bypasses chat filter",
@@ -99,6 +110,7 @@ GamesTab:CreateButton({
 })
 
 GamesTab:CreateSection("Bedwars")
+
 GamesTab:CreateButton({
     Name = "Vape V4 Voidware",
     Description = "OP Bedwars script",
