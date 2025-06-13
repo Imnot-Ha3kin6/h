@@ -41,6 +41,17 @@ GamesTab:CreateButton({
 })
 
 GamesTab:CreateSection("TSB")
+
+
+GamesTab:CreateButton({
+    Name = "Death Counter Identifier",
+    Description = "Check your death counter (TSB)",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/louismich4el/ItsLouisPlayz-Scripts/main/TSB%20Death%20Counter%20Identifier.lua"))()
+    end,
+})
+
+
 GamesTab:CreateButton({
     Name = "Instant Transmission",
     Description = "Teleport behind enemies (TSB)",
