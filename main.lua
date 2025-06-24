@@ -268,32 +268,68 @@ ScriptsTab:AddButton({
 ScriptsTab:AddButton({
 	Name = "Thunder Client Mob Fixer",
 	Callback = function()
-			local CoreGui = game:GetService("CoreGui")
-local screenGui = CoreGui:FindFirstChild("ScreenGui")
+	local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
 
+local screenGui = CoreGui:FindFirstChild("ScreenGui")
 if not screenGui then
-    warn("ScreenGui not found in CoreGui 💀")
+    warn("ScreenGui not found in CoreGui 😭")
     return
 end
 
 local textButton = screenGui:FindFirstChild("TextButton")
-
 if not textButton then
-    warn("TextButton not found in ScreenGui 😔")
+    warn("TextButton not found in ScreenGui 💀")
     return
 end
 
--- Resize TextButton
-textButton.Size = UDim2.new(0, 293, 0, 400)
+-- Resize
+local targetSize = UDim2.new(0, 293, 0, 400)
+textButton.Size = targetSize
 
--- Find the ScrollingFrame inside TextButton
-local scrollingFrame = textButton:FindFirstChildWhichIsA("ScrollingFrame", true)
-
-if scrollingFrame then
-    scrollingFrame.Size = UDim2.new(0, 293, 0, 400)
+-- Resize ScrollingFrame if it exists
+local scroll = textButton:FindFirstChildWhichIsA("ScrollingFrame", true)
+if scroll then
+    scroll.Size = targetSize
 else
-    warn("ScrollingFrame not found inside TextButton 🫠")
+    warn("ScrollingFrame not found in TextButton 😔")
 end
+
+-- Draggable Script (works for mobile + PC)
+local dragging = false
+local dragInput, dragStart, startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    textButton.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
+end
+
+textButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = textButton.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+textButton.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input == dragInput then
+        update(input)
+    end
+end)
+
 		end
 	})
 
