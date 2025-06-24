@@ -266,6 +266,38 @@ ScriptsTab:AddButton({
 })
 
 ScriptsTab:AddButton({
+	Name = "Thunder Client Mob Fixer",
+	Callback = function()
+			local CoreGui = game:GetService("CoreGui")
+local screenGui = CoreGui:FindFirstChild("ScreenGui")
+
+if not screenGui then
+    warn("ScreenGui not found in CoreGui 💀")
+    return
+end
+
+local textButton = screenGui:FindFirstChild("TextButton")
+
+if not textButton then
+    warn("TextButton not found in ScreenGui 😔")
+    return
+end
+
+-- Resize TextButton
+textButton.Size = UDim2.new(0, 293, 0, 400)
+
+-- Find the ScrollingFrame inside TextButton
+local scrollingFrame = textButton:FindFirstChildWhichIsA("ScrollingFrame", true)
+
+if scrollingFrame then
+    scrollingFrame.Size = UDim2.new(0, 293, 0, 400)
+else
+    warn("ScrollingFrame not found inside TextButton 🫠")
+end
+		end
+	})
+
+ScriptsTab:AddButton({
     Name = "Infinite Yield",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
