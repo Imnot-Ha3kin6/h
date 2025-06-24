@@ -1,70 +1,313 @@
--- cool beanz menu v2 (rayfield version) 🫘
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/jensonhirst/Orion/main/source')))()
 
-local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/main/source.lua"))()
-
-local Window = Rayfield:CreateWindow({
+local Window = OrionLib:MakeWindow({
     Name = "Cool Beanz Menu V2",
-    LoadingTitle = "Loading Cool Beanz...",
-    LoadingSubtitle = "v2",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = nil,
-        FileName = "CoolBeanzConfig"
-    },
-    Discord = {
-        Enabled = false,
-    },
-    KeySystem = false,
+    HidePremium = false,
+    SaveConfig = true,
+    ConfigFolder = "CoolBeanzConfig"
 })
 
 -- Tabs
-local ScriptsTab = Window:CreateTab("Scripts")
-local ReskinsTab = Window:CreateTab("Reskins")
-local GamesTab = Window:CreateTab("Games")
+local ScriptsTab = Window:MakeTab({
+    Name = "Scripts",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
 
--- Scripts Tab
-ScriptsTab:CreateSection("Universal")
+local ReskinsTab = Window:MakeTab({
+    Name = "Reskins",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
 
-ScriptsTab:CreateButton({
+local GamesTab = Window:MakeTab({
+    Name = "Games",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+-- Scripts Tab Section
+local ScriptsSection = ScriptsTab:AddSection({
+    Name = "Universal"
+})
+
+-- Mobile Cursor System
+local MobileCursor = {}
+MobileCursor.enabled = false
+MobileCursor.gui = nil
+MobileCursor.cursor = nil
+MobileCursor.connections = {}
+
+function MobileCursor:Create()
+    local Players = game:GetService("Players")
+    local UserInputService = game:GetService("UserInputService")
+    local RunService = game:GetService("RunService")
+    local TweenService = game:GetService("TweenService")
+    
+    local player = Players.LocalPlayer
+    local playerGui = player:WaitForChild("PlayerGui")
+    
+    -- Create main GUI
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "MobileCursorGUI"
+    screenGui.ResetOnSpawn = false
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.Parent = playerGui
+    
+    -- Create main frame
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0, 120, 0, 50)
+    mainFrame.Position = UDim2.new(0, 10, 0.5, -25)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Active = true
+    mainFrame.Draggable = true
+    mainFrame.Parent = screenGui
+    
+    -- Add corner radius
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = mainFrame
+    
+    -- Add stroke
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(70, 70, 70)
+    stroke.Thickness = 1
+    stroke.Parent = mainFrame
+    
+    -- Toggle button
+    local toggleButton = Instance.new("TextButton")
+    toggleButton.Name = "ToggleButton"
+    toggleButton.Size = UDim2.new(1, -10, 1, -10)
+    toggleButton.Position = UDim2.new(0, 5, 0, 5)
+    toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    toggleButton.BorderSizePixel = 0
+    toggleButton.Text = "Cursor: OFF"
+    toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggleButton.TextScaled = true
+    toggleButton.Font = Enum.Font.GothamBold
+    toggleButton.Parent = mainFrame
+    
+    -- Button corner
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 6)
+    buttonCorner.Parent = toggleButton
+    
+    -- Create cursor
+    local cursorFrame = Instance.new("Frame")
+    cursorFrame.Name = "Cursor"
+    cursorFrame.Size = UDim2.new(0, 20, 0, 20)
+    cursorFrame.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    cursorFrame.BorderSizePixel = 0
+    cursorFrame.Visible = false
+    cursorFrame.ZIndex = 1000
+    cursorFrame.Parent = screenGui
+    
+    -- Cursor design
+    local cursorCorner = Instance.new("UICorner")
+    cursorCorner.CornerRadius = UDim.new(0.5, 0)
+    cursorCorner.Parent = cursorFrame
+    
+    local cursorStroke = Instance.new("UIStroke")
+    cursorStroke.Color = Color3.fromRGB(255, 255, 255)
+    cursorStroke.Thickness = 2
+    cursorStroke.Parent = cursorFrame
+    
+    -- Cursor inner dot
+    local innerDot = Instance.new("Frame")
+    innerDot.Size = UDim2.new(0, 6, 0, 6)
+    innerDot.Position = UDim2.new(0.5, -3, 0.5, -3)
+    innerDot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    innerDot.BorderSizePixel = 0
+    innerDot.Parent = cursorFrame
+    
+    local innerCorner = Instance.new("UICorner")
+    innerCorner.CornerRadius = UDim.new(0.5, 0)
+    innerCorner.Parent = innerDot
+    
+    self.gui = screenGui
+    self.cursor = cursorFrame
+    self.toggleButton = toggleButton
+    
+    -- Touch handling
+    local function handleTouch(input)
+        if not self.enabled then return end
+        
+        local camera = workspace.CurrentCamera
+        local screenPoint = Vector2.new(input.Position.X, input.Position.Y)
+        local unitRay = camera:ScreenPointToRay(screenPoint.X, screenPoint.Y)
+        
+        -- Update cursor position
+        cursorFrame.Position = UDim2.new(0, screenPoint.X - 10, 0, screenPoint.Y - 10)
+        
+        -- Simulate click
+        if input.UserInputState == Enum.UserInputState.Begin then
+            -- Click animation
+            local clickTween = TweenService:Create(cursorFrame, 
+                TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
+                {Size = UDim2.new(0, 16, 0, 16)}
+            )
+            clickTween:Play()
+            
+            clickTween.Completed:Connect(function()
+                local returnTween = TweenService:Create(cursorFrame, 
+                    TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
+                    {Size = UDim2.new(0, 20, 0, 20)}
+                )
+                returnTween:Play()
+            end)
+            
+            -- Perform raycast click
+            local raycastParams = RaycastParams.new()
+            raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+            raycastParams.FilterDescendantsInstances = {player.Character}
+            
+            local raycastResult = workspace:Raycast(unitRay.Origin, unitRay.Direction * 1000, raycastParams)
+            
+            if raycastResult then
+                local hitPart = raycastResult.Instance
+                local clickDetector = hitPart:FindFirstChildOfClass("ClickDetector")
+                if clickDetector then
+                    fireclickdetector(clickDetector)
+                end
+            end
+        end
+    end
+    
+    -- Toggle function
+    local function toggleCursor()
+        self.enabled = not self.enabled
+        cursorFrame.Visible = self.enabled
+        
+        if self.enabled then
+            toggleButton.Text = "Cursor: ON"
+            toggleButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+            
+            -- Connect touch events
+            self.connections.touch = UserInputService.TouchStarted:Connect(handleTouch)
+            self.connections.touchMove = UserInputService.TouchMoved:Connect(handleTouch)
+            
+            -- Pulse animation for cursor
+            local function pulseCursor()
+                if self.enabled then
+                    local pulseTween = TweenService:Create(cursorStroke, 
+                        TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), 
+                        {Transparency = 0.5}
+                    )
+                    pulseTween:Play()
+                    self.connections.pulse = pulseTween
+                end
+            end
+            pulseCursor()
+            
+        else
+            toggleButton.Text = "Cursor: OFF"
+            toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            
+            -- Disconnect events
+            for _, connection in pairs(self.connections) do
+                if connection then
+                    connection:Disconnect()
+                end
+            end
+            self.connections = {}
+        end
+    end
+    
+    -- Button click event
+    toggleButton.MouseButton1Click:Connect(toggleCursor)
+    
+    -- Click on cursor to disable
+    cursorFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            toggleCursor()
+        end
+    end)
+    
+    -- Smooth entrance animation
+    mainFrame.Position = UDim2.new(0, -130, 0.5, -25)
+    local entranceTween = TweenService:Create(mainFrame, 
+        TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), 
+        {Position = UDim2.new(0, 10, 0.5, -25)}
+    )
+    entranceTween:Play()
+    
+    return screenGui
+end
+
+function MobileCursor:Destroy()
+    if self.gui then
+        self.gui:Destroy()
+    end
+    for _, connection in pairs(self.connections) do
+        if connection then
+            connection:Disconnect()
+        end
+    end
+end
+
+-- Add Mobile Cursor to Scripts Tab
+ScriptsTab:AddButton({
+    Name = "Mobile Cursor",
+    Callback = function()
+        if MobileCursor.gui then
+            MobileCursor:Destroy()
+        end
+        MobileCursor:Create()
+        
+        OrionLib:MakeNotification({
+            Name = "Mobile Cursor",
+            Content = "Mobile cursor GUI loaded! Drag the button to move it around.",
+            Image = "rbxassetid://4483345998",
+            Time = 3
+        })
+    end
+})
+
+ScriptsTab:AddButton({
     Name = "Infinite Yield",
-    Description = "admin go brrrr",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
-    end,
+    end
 })
 
-ScriptsTab:CreateButton({
+ScriptsTab:AddButton({
     Name = "Quotas Hub",
-    Description = "Script hub by Insertl",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/Insertl/QuotasHub/main/BETAv1.3"))()
-    end,
+    end
 })
 
--- Games Tab
-GamesTab:CreateSection("Arsenal")
+-- Games Tab Sections & Buttons
+local ArsenalSection = GamesTab:AddSection({
+    Name = "Arsenal"
+})
 
-GamesTab:CreateButton({
-    Name = "Arsenal Script",
-    Description = "aimbot + esp + more",
+GamesTab:AddButton({
+    Name = "Thunder Client (OP AS SHIT)",
     Callback = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/j0SWm1nr"))()
-    end,
+       --[[
+	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+]]
+getgenv().thunderclient = true
+loadstring(game:HttpGet("https://api.luarmor.net/files/v3/verified/dca3e69649ed196af0ac6577f743a0ae.lua"))()
+    end
 })
 
-GamesTab:CreateSection("TSB")
+local TSBSection = GamesTab:AddSection({
+    Name = "TSB"
+})
 
-GamesTab:CreateButton({
+GamesTab:AddButton({
     Name = "Death Counter Identifier",
-    Description = "Check your death counter (TSB)",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/louismich4el/ItsLouisPlayz-Scripts/main/TSB%20Death%20Counter%20Identifier.lua"))()
-    end,
+    end
 })
 
-GamesTab:CreateButton({
+GamesTab:AddButton({
     Name = "Instant Transmission",
-    Description = "Teleport behind enemies (TSB)",
     Callback = function()
         local mouse = game.Players.LocalPlayer:GetMouse()
         local tool = Instance.new("Tool")
@@ -96,35 +339,38 @@ GamesTab:CreateButton({
         end)
 
         tool.Parent = player.Backpack
-    end,
+    end
 })
 
-GamesTab:CreateSection("Troll / Cursing")
+local TrollSection = GamesTab:AddSection({
+    Name = "Troll / Cursing"
+})
 
-GamesTab:CreateButton({
+GamesTab:AddButton({
     Name = "Better Bypasser",
-    Description = "Bypasses chat filter",
     Callback = function()
         loadstring(game:HttpGet("https://github.com/Synergy-Networks/products/raw/main/BetterBypasser/loader.lua"))()
-    end,
+    end
 })
 
-GamesTab:CreateSection("Bedwars")
+local BedwarsSection = GamesTab:AddSection({
+    Name = "Bedwars"
+})
 
-GamesTab:CreateButton({
+GamesTab:AddButton({
     Name = "Vape V4 Voidware",
-    Description = "OP Bedwars script",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/VapeVoidware/VWExtra/main/installer.lua", true))()
-    end,
+    end
 })
 
--- Reskins Tab
-ReskinsTab:CreateSection("Saitama Reskins")
+-- Reskins Tab Section
+local SaitamaSection = ReskinsTab:AddSection({
+    Name = "Saitama Reskins"
+})
 
-ReskinsTab:CreateButton({
+ReskinsTab:AddButton({
     Name = "KJ Reskin",
-    Description = "Reskins Saitama to KJ",
     Callback = function()
         getgenv().Moveset_Settings = {
             ["ExecuteOnRespawn"] = true,
@@ -155,14 +401,16 @@ ReskinsTab:CreateButton({
             }
         }
         loadstring(game:HttpGet("https://raw.githubusercontent.com/skibiditoiletfan2007/BaldyToKJ/refs/heads/main/Latest.lua"))()
-    end,
+    end
 })
 
-ReskinsTab:CreateButton({
+ReskinsTab:AddButton({
     Name = "Gojo Reskin",
-    Description = "Morph Saitama into Gojo",
     Callback = function()
         getgenv().morph = true
         loadstring(game:HttpGet("https://raw.githubusercontent.com/skibiditoiletfan2007/BaldyToSorcerer/refs/heads/main/LatestV2.lua"))()
-    end,
+    end
 })
+
+-- initialize the UI
+OrionLib:Init()
