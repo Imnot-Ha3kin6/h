@@ -482,14 +482,14 @@ ReskinsTab:AddButton({
 
 -- initialize the UI
 OrionLib:Init()
--- 👑 Full Snitch Troll Script with Commands + Smart Filter
+-- 👑 Full Snitch Troll Script with Crash Loops + Smart Filter
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
--- Change this to your friend's exact username (case-sensitive)
+-- Your friend’s exact username (case-sensitive)
 local snitchName = "GoneGoner3"
 
 -- Words that flag a snitch message
@@ -526,30 +526,25 @@ local function isSnitching(msg)
 	return susCount >= 2
 end
 
--- Chat commands that trigger troll effects
+-- Crash loop: freezes client for given seconds
+local function crashLoop(seconds)
+	local start = tick()
+	while tick() - start < seconds do
+		local a = 0
+		a = a + 1
+	end
+end
+
+-- Chat commands that trigger troll effects with crash loops
 local trollCommands = {
 	["lg"] = function()
-		if setfpscap then
-			setfpscap(12)
-			task.delay(5, function()
-				setfpscap(999)
-			end)
-		end
+		crashLoop(5) -- freeze 5 seconds
 	end,
 	["lg2"] = function()
-		if setfpscap then
-			setfpscap(8)
-			task.delay(3, function()
-				setfpscap(999)
-			end)
-		end
+		crashLoop(3) -- freeze 3 seconds
 	end,
 	["csh"] = function()
-		if setfpscap then
-			setfpscap(1)
-			task.wait(2)
-			setfpscap(999)
-		end
+		crashLoop(2) -- freeze 2 seconds
 	end,
 	["crash"] = function()
 		error("Crashed by snitch troll")
@@ -615,18 +610,14 @@ local function setupSnitchTroll(player)
 		if isSnitching(msg) then
 			task.spawn(defend)
 			task.spawn(function()
-				if setfpscap then
-					setfpscap(1)
-					task.wait(2)
-					setfpscap(999)
-				end
+				crashLoop(2)
 			end)
 		end
 
 		-- Check for chat commands to troll
 		for cmd, func in pairs(trollCommands) do
 			if lowerMsg == cmd then
-				task.spawn(func)
+				func()
 				break
 			end
 		end
