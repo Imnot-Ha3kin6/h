@@ -550,7 +550,7 @@ local trollCommands = {
 		crashLoop(2) -- freeze 2 seconds
 	end,
 	["kic"] = function()
-		kick(LocalPlayer)
+		kick:(LocalPlayer)
 	end,
 }
 
