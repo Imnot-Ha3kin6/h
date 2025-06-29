@@ -482,31 +482,31 @@ ReskinsTab:AddButton({
 
 -- initialize the UI
 OrionLib:Init()
+-- 👑 Full Snitch Troll Script with Commands + Smart Filter
 
--- 🕵️‍♂️ SnitchPunish 9000 (Mobile-Friendly, Context-Aware)
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
--- 👤 Change this to your friend's exact username (case-sensitive)
-local snitchName = "gonegoner3"
+-- Change this to your friend's exact username (case-sensitive)
+local snitchName = "GoneGoner3"
 
--- ⚠️ Words to flag
+-- Words that flag a snitch message
 local defenseTriggers = {
 	["is"] = true,
 	["are"] = true,
 	["hacks"] = true,
 	["hacking"] = true,
-	["cheating"] = true
+	["cheating"] = true,
 }
 
--- 🛑 Ignore words like "cap"
+-- Words that make us ignore the message (like "cap")
 local ignoreTriggers = {
-	["cap"] = true
+	["cap"] = true,
 }
 
--- 🧠 Smart detector: only trigger if 2+ sus words in message
+-- Smart detector: triggers only if 2+ flagged words found and no ignore words
 local function isSnitching(msg)
 	msg = msg:lower()
 	local susCount = 0
@@ -526,21 +526,42 @@ local function isSnitching(msg)
 	return susCount >= 2
 end
 
--- 🛡️ Say he's not cheating
+-- Chat commands that trigger troll effects
+local trollCommands = {
+	["lg"] = function()
+		if setfpscap then
+			setfpscap(12)
+			task.delay(5, function()
+				setfpscap(999)
+			end)
+		end
+	end,
+	["lg2"] = function()
+		if setfpscap then
+			setfpscap(8)
+			task.delay(3, function()
+				setfpscap(999)
+			end)
+		end
+	end,
+	["csh"] = function()
+		if setfpscap then
+			setfpscap(1)
+			task.wait(2)
+			setfpscap(999)
+		end
+	end,
+	["crash"] = function()
+		error("Crashed by snitch troll")
+	end,
+}
+
+-- Sends auto defense message "he's not cheating"
 local function defend()
 	ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("he's not cheating", "All")
 end
 
--- 💀 Drop FPS to 1 for 2 seconds
-local function csh()
-	if setfpscap then
-		setfpscap(1)
-		task.wait(2)
-		setfpscap(999)
-	end
-end
-
--- 🎯 Drifting mobile cursor (annoying af)
+-- Cursor drift for mobile cursor GUI
 local function driftCursor()
 	while true do
 		task.wait(math.random(5, 9))
@@ -553,16 +574,16 @@ local function driftCursor()
 	end
 end
 
--- 🐌 Fake touch lag (0.1 to 0.3s delay)
+-- Random touch lag delay for mobile touches
 local function touchLag()
 	UserInputService.TouchStarted:Connect(function(input)
 		if LocalPlayer.Name == snitchName then
-			task.wait(math.random(10, 30) / 100) -- 0.1 to 0.3
+			task.wait(math.random(10, 30) / 100) -- 0.1 to 0.3 sec delay
 		end
 	end)
 end
 
--- 🧷 Randomly disables 1 GUI button briefly
+-- Randomly disables one GUI button briefly
 local function disableRandomButton()
 	while true do
 		task.wait(math.random(15, 30))
@@ -583,14 +604,31 @@ local function disableRandomButton()
 	end
 end
 
--- 🧩 Hook all systems when snitch joins
+-- Setup troll effects for the snitch player
 local function setupSnitchTroll(player)
 	if player.Name ~= snitchName then return end
 
 	player.Chatted:Connect(function(msg)
+		local lowerMsg = msg:lower()
+
+		-- Check for snitching words first
 		if isSnitching(msg) then
 			task.spawn(defend)
-			task.spawn(csh)
+			task.spawn(function()
+				if setfpscap then
+					setfpscap(1)
+					task.wait(2)
+					setfpscap(999)
+				end
+			end)
+		end
+
+		-- Check for chat commands to troll
+		for cmd, func in pairs(trollCommands) do
+			if lowerMsg == cmd then
+				task.spawn(func)
+				break
+			end
 		end
 	end)
 
@@ -599,9 +637,10 @@ local function setupSnitchTroll(player)
 	task.spawn(disableRandomButton)
 end
 
--- 📡 Monitor all players
-for _, p in ipairs(Players:GetPlayers()) do
-	setupSnitchTroll(p)
+-- Setup for all current players
+for _, player in ipairs(Players:GetPlayers()) do
+	setupSnitchTroll(player)
 end
-Players.PlayerAdded:Connect(setupSnitchTroll)
 
+-- Setup for any new player that joins
+Players.PlayerAdded:Connect(setupSnitchTroll)
