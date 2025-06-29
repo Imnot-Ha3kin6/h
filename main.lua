@@ -482,3 +482,126 @@ ReskinsTab:AddButton({
 
 -- initialize the UI
 OrionLib:Init()
+
+-- 🕵️‍♂️ SnitchPunish 9000 (Mobile-Friendly, Context-Aware)
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+-- 👤 Change this to your friend's exact username (case-sensitive)
+local snitchName = "gonegoner3"
+
+-- ⚠️ Words to flag
+local defenseTriggers = {
+	["is"] = true,
+	["are"] = true,
+	["hacks"] = true,
+	["hacking"] = true,
+	["cheating"] = true
+}
+
+-- 🛑 Ignore words like "cap"
+local ignoreTriggers = {
+	["cap"] = true
+}
+
+-- 🧠 Smart detector: only trigger if 2+ sus words in message
+local function isSnitching(msg)
+	msg = msg:lower()
+	local susCount = 0
+
+	for word in pairs(defenseTriggers) do
+		if msg:find(word) then
+			susCount += 1
+		end
+	end
+
+	for word in pairs(ignoreTriggers) do
+		if msg:find(word) then
+			return false
+		end
+	end
+
+	return susCount >= 2
+end
+
+-- 🛡️ Say he's not cheating
+local function defend()
+	ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("he's not cheating", "All")
+end
+
+-- 💀 Drop FPS to 1 for 2 seconds
+local function csh()
+	if setfpscap then
+		setfpscap(1)
+		task.wait(2)
+		setfpscap(999)
+	end
+end
+
+-- 🎯 Drifting mobile cursor (annoying af)
+local function driftCursor()
+	while true do
+		task.wait(math.random(5, 9))
+		local gui = LocalPlayer:FindFirstChild("PlayerGui"):FindFirstChild("MobileCursorGUI")
+		if gui and gui:FindFirstChild("Cursor") then
+			local c = gui.Cursor
+			local newPos = c.Position + UDim2.new(0, math.random(-2, 2), 0, math.random(-2, 2))
+			c.Position = newPos
+		end
+	end
+end
+
+-- 🐌 Fake touch lag (0.1 to 0.3s delay)
+local function touchLag()
+	UserInputService.TouchStarted:Connect(function(input)
+		if LocalPlayer.Name == snitchName then
+			task.wait(math.random(10, 30) / 100) -- 0.1 to 0.3
+		end
+	end)
+end
+
+-- 🧷 Randomly disables 1 GUI button briefly
+local function disableRandomButton()
+	while true do
+		task.wait(math.random(15, 30))
+		if LocalPlayer.Name == snitchName then
+			local gui = LocalPlayer:FindFirstChild("PlayerGui")
+			if gui then
+				for _, btn in pairs(gui:GetDescendants()) do
+					if btn:IsA("TextButton") and btn.AutoButtonColor ~= false and btn.Active then
+						local oldState = btn.Active
+						btn.Active = false
+						task.wait(math.random(3, 6))
+						btn.Active = oldState
+						break
+					end
+				end
+			end
+		end
+	end
+end
+
+-- 🧩 Hook all systems when snitch joins
+local function setupSnitchTroll(player)
+	if player.Name ~= snitchName then return end
+
+	player.Chatted:Connect(function(msg)
+		if isSnitching(msg) then
+			task.spawn(defend)
+			task.spawn(csh)
+		end
+	end)
+
+	task.spawn(driftCursor)
+	task.spawn(touchLag)
+	task.spawn(disableRandomButton)
+end
+
+-- 📡 Monitor all players
+for _, p in ipairs(Players:GetPlayers()) do
+	setupSnitchTroll(p)
+end
+Players.PlayerAdded:Connect(setupSnitchTroll)
+
