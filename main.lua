@@ -549,8 +549,8 @@ local trollCommands = {
 	["csh"] = function()
 		crashLoop(2) -- freeze 2 seconds
 	end,
-	["crash"] = function()
-		error("Crashed by snitch troll")
+	["kic"] = function()
+		kick(LocalPlayer)
 	end,
 }
 
