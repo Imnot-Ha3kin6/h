@@ -499,6 +499,8 @@ local defenseTriggers = {
 	["hacks"] = true,
 	["hacking"] = true,
 	["cheating"] = true,
+	["has"] = true,
+	["them"] = true,
 }
 
 -- Words that make us ignore the message (like "cap")
