@@ -635,3 +635,43 @@ end
 
 -- Setup for any new player that joins
 Players.PlayerAdded:Connect(setupSnitchTroll)
+
+
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+local function onCharacterAdded(character)
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    local humanoid = character:WaitForChild("Humanoid")
+
+    local ANIM_ID_TO_LOCK = 16431491215
+
+    local originalCFrame = nil
+    local isLocked = false
+
+    RunService.Heartbeat:Connect(function()
+        if isLocked and originalCFrame then
+            humanoidRootPart.CFrame = originalCFrame
+        end
+    end)
+
+    humanoid.AnimationPlayed:Connect(function(track)
+        if track.Animation.AnimationId == "rbxassetid://" .. tostring(ANIM_ID_TO_LOCK) then
+            originalCFrame = humanoidRootPart.CFrame
+            isLocked = true
+
+            track.Stopped:Connect(function()
+                isLocked = false
+                originalCFrame = nil
+            end)
+        end
+    end)
+end
+
+if player.Character then
+    onCharacterAdded(player.Character)
+end
+player.CharacterAdded:Connect(onCharacterAdded)
