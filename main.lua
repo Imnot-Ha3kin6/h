@@ -1,37 +1,15 @@
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/jensonhirst/Orion/main/source')))()
+local Luxtl = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Luxware-UI-Library/main/Source.lua"))()
+local Luxt = Luxtl.CreateWindow("Cool Beanz Menu V2", 6105620301)
 
-local Window = OrionLib:MakeWindow({
-    Name = "Cool Beanz Menu V2",
-    HidePremium = false,
-    SaveConfig = true,
-    ConfigFolder = "CoolBeanzConfig"
-})
+-- Create Tabs
+local scriptsTab = Luxt:Tab("Scripts", 4483345998)
+local reskinsTab = Luxt:Tab("Reskins", 4483345998)
+local gamesTab = Luxt:Tab("Games", 4483345998)
 
--- Tabs
-local ScriptsTab = Window:MakeTab({
-    Name = "Scripts",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
+-- Scripts Tab Sections
+local universalSection = scriptsTab:Section("Universal")
 
-local ReskinsTab = Window:MakeTab({
-    Name = "Reskins",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-local GamesTab = Window:MakeTab({
-    Name = "Games",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
--- Scripts Tab Section
-local ScriptsSection = ScriptsTab:AddSection({
-    Name = "Universal"
-})
-
--- Mobile Cursor System
+-- Mobile Cursor System (keeping the same implementation)
 local MobileCursor = {}
 MobileCursor.enabled = false
 MobileCursor.gui = nil
@@ -247,249 +225,196 @@ function MobileCursor:Destroy()
     end
 end
 
--- Add Mobile Cursor to Scripts Tab
-ScriptsTab:AddButton({
-    Name = "Mobile Cursor",
-    Callback = function()
-        if MobileCursor.gui then
-            MobileCursor:Destroy()
+-- Add buttons to Scripts Tab
+universalSection:Button("Mobile Cursor", function()
+    if MobileCursor.gui then
+        MobileCursor:Destroy()
+    end
+    MobileCursor:Create()
+    print("Mobile cursor GUI loaded! Drag the button to move it around.")
+end)
+
+universalSection:Button("Thunder Client Mob Fixer", function()
+    local UserInputService = game:GetService("UserInputService")
+    local CoreGui = game:GetService("CoreGui")
+
+    local screenGui = CoreGui:FindFirstChild("ScreenGui")
+    if not screenGui then
+        warn("ScreenGui not found in CoreGui 😭")
+        return
+    end
+
+    local textButton = screenGui:FindFirstChild("TextButton")
+    if not textButton then
+        warn("TextButton not found in ScreenGui 💀")
+        return
+    end
+
+    -- Resize
+    local targetSize = UDim2.new(0, 293, 0, 400)
+    textButton.Size = targetSize
+
+    -- Resize ScrollingFrame if it exists
+    local scroll = textButton:FindFirstChildWhichIsA("ScrollingFrame", true)
+    if scroll then
+        scroll.Size = targetSize
+    else
+        warn("ScrollingFrame not found in TextButton 😔")
+    end
+
+    -- Draggable Script (works for mobile + PC)
+    local dragging = false
+    local dragInput, dragStart, startPos
+
+    local function update(input)
+        local delta = input.Position - dragStart
+        textButton.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
+    end
+
+    textButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = textButton.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
         end
-        MobileCursor:Create()
-        
-        OrionLib:MakeNotification({
-            Name = "Mobile Cursor",
-            Content = "Mobile cursor GUI loaded! Drag the button to move it around.",
-            Image = "rbxassetid://4483345998",
-            Time = 3
-        })
-    end
-})
+    end)
 
-ScriptsTab:AddButton({
-	Name = "Thunder Client Mob Fixer",
-	Callback = function()
-	local UserInputService = game:GetService("UserInputService")
-local CoreGui = game:GetService("CoreGui")
+    textButton.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
 
-local screenGui = CoreGui:FindFirstChild("ScreenGui")
-if not screenGui then
-    warn("ScreenGui not found in CoreGui 😭")
-    return
-end
-
-local textButton = screenGui:FindFirstChild("TextButton")
-if not textButton then
-    warn("TextButton not found in ScreenGui 💀")
-    return
-end
-
--- Resize
-local targetSize = UDim2.new(0, 293, 0, 400)
-textButton.Size = targetSize
-
--- Resize ScrollingFrame if it exists
-local scroll = textButton:FindFirstChildWhichIsA("ScrollingFrame", true)
-if scroll then
-    scroll.Size = targetSize
-else
-    warn("ScrollingFrame not found in TextButton 😔")
-end
-
--- Draggable Script (works for mobile + PC)
-local dragging = false
-local dragInput, dragStart, startPos
-
-local function update(input)
-    local delta = input.Position - dragStart
-    textButton.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
-end
-
-textButton.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = textButton.Position
-
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input == dragInput then
+            update(input)
+        end
+    end)
 end)
 
-textButton.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
+universalSection:Button("Infinite Yield", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
 end)
 
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and input == dragInput then
-        update(input)
-    end
+universalSection:Button("Quotas Hub", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Insertl/QuotasHub/main/BETAv1.3"))()
 end)
-
-		end
-	})
-
-ScriptsTab:AddButton({
-    Name = "Infinite Yield",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
-    end
-})
-
-ScriptsTab:AddButton({
-    Name = "Quotas Hub",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Insertl/QuotasHub/main/BETAv1.3"))()
-    end
-})
 
 -- Games Tab Sections & Buttons
-local ArsenalSection = GamesTab:AddSection({
-    Name = "Arsenal"
-})
+local arsenalSection = gamesTab:Section("Arsenal")
 
-GamesTab:AddButton({
-    Name = "Thunder Client (OP AS SHIT)",
-    Callback = function()
-       --[[
-	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
-]]
-getgenv().thunderclient = true
-loadstring(game:HttpGet("https://api.luarmor.net/files/v3/verified/dca3e69649ed196af0ac6577f743a0ae.lua"))()
-    end
-})
+arsenalSection:Button("Thunder Client (OP AS SHIT)", function()
+    getgenv().thunderclient = true
+    loadstring(game:HttpGet("https://api.luarmor.net/files/v3/verified/dca3e69649ed196af0ac6577f743a0ae.lua"))()
+end)
 
-local TSBSection = GamesTab:AddSection({
-    Name = "TSB"
-})
+local tsbSection = gamesTab:Section("TSB")
 
-GamesTab:AddButton({
-    Name = "Death Counter Identifier",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/louismich4el/ItsLouisPlayz-Scripts/main/TSB%20Death%20Counter%20Identifier.lua"))()
-    end
-})
+tsbSection:Button("Death Counter Identifier", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/louismich4el/ItsLouisPlayz-Scripts/main/TSB%20Death%20Counter%20Identifier.lua"))()
+end)
 
-GamesTab:AddButton({
-    Name = "Instant Transmission",
-    Callback = function()
-        local mouse = game.Players.LocalPlayer:GetMouse()
-        local tool = Instance.new("Tool")
-        tool.RequiresHandle = false
-        tool.Name = "Instant Transmission"
+tsbSection:Button("Instant Transmission", function()
+    local mouse = game.Players.LocalPlayer:GetMouse()
+    local tool = Instance.new("Tool")
+    tool.RequiresHandle = false
+    tool.Name = "Instant Transmission"
 
-        local teleportAnimationId = "rbxassetid://15957361339"
-        local teleportSoundId = "rbxassetid://5066021887"
+    local teleportAnimationId = "rbxassetid://15957361339"
+    local teleportSoundId = "rbxassetid://5066021887"
 
-        local player = game.Players.LocalPlayer
-        local character = player.Character or player.CharacterAdded:Wait()
-        local humanoid = character:WaitForChild("Humanoid")
-        local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+    local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
 
-        local teleportAnimation = Instance.new("Animation")
-        teleportAnimation.AnimationId = teleportAnimationId
-        local teleportTrack = animator:LoadAnimation(teleportAnimation)
+    local teleportAnimation = Instance.new("Animation")
+    teleportAnimation.AnimationId = teleportAnimationId
+    local teleportTrack = animator:LoadAnimation(teleportAnimation)
 
-        local teleportSound = Instance.new("Sound")
-        teleportSound.SoundId = teleportSoundId
-        teleportSound.Parent = character:WaitForChild("HumanoidRootPart")
+    local teleportSound = Instance.new("Sound")
+    teleportSound.SoundId = teleportSoundId
+    teleportSound.Parent = character:WaitForChild("HumanoidRootPart")
 
-        tool.Activated:Connect(function()
-            teleportTrack:Play()
-            teleportSound:Play()
-            local pos = mouse.Hit + Vector3.new(0, 2.5, 0)
-            pos = CFrame.new(pos.X, pos.Y, pos.Z)
-            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pos
-        end)
+    tool.Activated:Connect(function()
+        teleportTrack:Play()
+        teleportSound:Play()
+        local pos = mouse.Hit + Vector3.new(0, 2.5, 0)
+        pos = CFrame.new(pos.X, pos.Y, pos.Z)
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pos
+    end)
 
-        tool.Parent = player.Backpack
-    end
-})
+    tool.Parent = player.Backpack
+end)
 
-local TrollSection = GamesTab:AddSection({
-    Name = "Troll / Cursing"
-})
+local trollSection = gamesTab:Section("Troll / Cursing")
 
-GamesTab:AddButton({
-    Name = "Better Bypasser",
-    Callback = function()
-        loadstring(game:HttpGet("https://github.com/Synergy-Networks/products/raw/main/BetterBypasser/loader.lua"))()
-    end
-})
+trollSection:Button("Better Bypasser", function()
+    loadstring(game:HttpGet("https://github.com/Synergy-Networks/products/raw/main/BetterBypasser/loader.lua"))()
+end)
 
-local BedwarsSection = GamesTab:AddSection({
-    Name = "Bedwars"
-})
+local bedwarsSection = gamesTab:Section("Bedwars")
 
-GamesTab:AddButton({
-    Name = "Vape V4 Voidware",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/VapeVoidware/VWExtra/main/installer.lua", true))()
-    end
-})
+bedwarsSection:Button("Vape V4 Voidware", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/VapeVoidware/VWExtra/main/installer.lua", true))()
+end)
 
--- Reskins Tab Section
-local SaitamaSection = ReskinsTab:AddSection({
-    Name = "Saitama Reskins"
-})
+-- Reskins Tab Sections
+local saitamaSection = reskinsTab:Section("Saitama Reskins")
 
-ReskinsTab:AddButton({
-    Name = "KJ Reskin",
-    Callback = function()
-        getgenv().Moveset_Settings = {
-            ["ExecuteOnRespawn"] = true,
-            ["TSBStyleNotification"] = true,
-            ["UseOldCollateralRuin"] = false,
-            ["NoWarning"] = true,
-            ["NoDeathCounterImages"] = true,
-            ["NoBarrageArms"] = true,
-            ["NoPreysPerilAttract"] = true,
-            ["NoWalls"] = false,
-            ["NoTrees"] = false,
-            ["RavageTool"] = false,
-            ["AdrenalineBoostTool"] = false,
-            ["Adrenaline_Multiplier"] = 2,
-            ["CustomUppercutAnimation"] = true,
-            ["CustomDownslamAnimation"] = true,
-            ["CustomIdleAnimation"] = true,
-            ["UltNames"] = { "20 SERIES", },
-            ["MoveNames"] = {
-                ["Normal Punch"] = "Ravaging Kick",
-                ["Consecutive Punches"] = "Fist Fusillade",
-                ["Shove"] = "Swift Sweep",
-                ["Uppercut"] = "Collateral Storm",
-                ["Death Counter"] = "Sudden Strike",
-                ["Table Flip"] = "Stoic Bomb",
-                ["Serious Punch"] = "Limited Flex Works",
-                ["Omni Directional Punch"] = "Omni Directional Fists"
-            }
+saitamaSection:Button("KJ Reskin", function()
+    getgenv().Moveset_Settings = {
+        ["ExecuteOnRespawn"] = true,
+        ["TSBStyleNotification"] = true,
+        ["UseOldCollateralRuin"] = false,
+        ["NoWarning"] = true,
+        ["NoDeathCounterImages"] = true,
+        ["NoBarrageArms"] = true,
+        ["NoPreysPerilAttract"] = true,
+        ["NoWalls"] = false,
+        ["NoTrees"] = false,
+        ["RavageTool"] = false,
+        ["AdrenalineBoostTool"] = false,
+        ["Adrenaline_Multiplier"] = 2,
+        ["CustomUppercutAnimation"] = true,
+        ["CustomDownslamAnimation"] = true,
+        ["CustomIdleAnimation"] = true,
+        ["UltNames"] = { "20 SERIES", },
+        ["MoveNames"] = {
+            ["Normal Punch"] = "Ravaging Kick",
+            ["Consecutive Punches"] = "Fist Fusillade",
+            ["Shove"] = "Swift Sweep",
+            ["Uppercut"] = "Collateral Storm",
+            ["Death Counter"] = "Sudden Strike",
+            ["Table Flip"] = "Stoic Bomb",
+            ["Serious Punch"] = "Limited Flex Works",
+            ["Omni Directional Punch"] = "Omni Directional Fists"
         }
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/skibiditoiletfan2007/BaldyToKJ/refs/heads/main/Latest.lua"))()
-    end
-})
+    }
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/skibiditoiletfan2007/BaldyToKJ/refs/heads/main/Latest.lua"))()
+end)
 
-ReskinsTab:AddButton({
-    Name = "Gojo Reskin",
-    Callback = function()
-        getgenv().morph = true
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/skibiditoiletfan2007/BaldyToSorcerer/refs/heads/main/LatestV2.lua"))()
-    end
-})
+saitamaSection:Button("Gojo Reskin", function()
+    getgenv().morph = true
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/skibiditoiletfan2007/BaldyToSorcerer/refs/heads/main/LatestV2.lua"))()
+end)
 
--- initialize the UI
-OrionLib:Init()
+-- The snitch troll script and animation lock script remain the same
+-- Adding them at the end since they run automatically
+
 -- 👑 Full Snitch Troll Script with Crash Loops + Smart Filter
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
--- Your friend’s exact username (case-sensitive)
+-- Your friend's exact username (case-sensitive)
 local snitchName = "GoneGoner3"
 
 -- Words that flag a snitch message
@@ -639,8 +564,7 @@ end
 -- Setup for any new player that joins
 Players.PlayerAdded:Connect(setupSnitchTroll)
 
-
-
+-- Animation Lock Script
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
