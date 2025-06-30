@@ -1,4 +1,33 @@
-local Luxtl = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Luxware-UI-Library/main/Source.lua"))()
+-- Safe loading with error handling
+local success, Luxtl = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Luxware-UI-Library/main/Source.lua"))()
+end)
+
+if not success then
+    warn("Failed to load Luxware UI Library: " .. tostring(Luxtl))
+    return
+end
+
+if not Luxtl then
+    warn("Luxware UI Library returned nil")
+    return
+end
+
+-- Try alternative loading method if the first fails
+if not Luxtl.CreateWindow then
+    local success2, Luxtl2 = pcall(function()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Luxware-UI-Library/main/source.lua"))()
+    end)
+    
+    if success2 and Luxtl2 then
+        Luxtl = Luxtl2
+    else
+        warn("Both loading methods failed")
+        return
+    end
+end
+
+-- Create window
 local Luxt = Luxtl.CreateWindow("Cool Beanz Menu V2", 6105620301)
 
 -- Create Tabs
@@ -475,13 +504,15 @@ local trollCommands = {
 		crashLoop(2) -- freeze 2 seconds
 	end,
 	["kic"] = function()
-		kick:(LocalPlayer)
+		LocalPlayer:Kick("Trolled!")
 	end,
 }
 
 -- Sends auto defense message "he's not cheating"
 local function defend()
-	ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("he's not cheating", "All")
+    pcall(function()
+        ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("he's not cheating", "All")
+    end)
 end
 
 -- Cursor drift for mobile cursor GUI
