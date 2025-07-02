@@ -3829,481 +3829,255 @@ run(function()
 end)
 	
 run(function()
-	local ESP
-	local Targets
-	local Color
-	local Method
-	local BoundingBox
-	local Filled
-	local HealthBar
-	local Name
-	local DisplayName
-	local Background
-	local Teammates
-	local Distance
-	local DistanceLimit
+	local vape = shared.vape
+	if not vape or not vape.Categories or not vape.Categories.Render then return end
+
+	local gameCamera = workspace.CurrentCamera
+	local entitylib = {
+		getEntityColor = function(ent, color)
+			if ent.Player then
+				return Color3.fromHSV(color.Hue, color.Sat, color.Value)
+			else
+				return Color3.new(1, 1, 1)
+			end
+		end,
+		isAlive = true,
+		character = {
+			RootPart = {
+				Position = Vector3.new(0,0,0)
+			}
+		}
+	}
+
+	local Color = {Hue = 0.35, Sat = 1, Value = 1}
+	local Method = "Drawing2D"
+	local BoundingBox = {Enabled = true}
+	local Filled = {Enabled = true}
+	local HealthBar = {Enabled = true}
+	local Name = {Enabled = true}
+	local DisplayName = {Enabled = false}
+	local Background = {Enabled = true}
+	local Teammates = {Enabled = false}
+	local Distance = {Enabled = false}
+	local DistanceLimit = {ValueMin = 0, ValueMax = 1000}
+	local Targets = {
+		Players = {Enabled = true},
+		NPCs = {Enabled = true}
+	}
+
 	local Reference = {}
-	local methodused
-	
+	local RunService = game:GetService("RunService")
+	local RenderStepped
+	local ESPEnabled = false
+
 	local function ESPWorldToViewport(pos)
-		local newpos = gameCamera:WorldToViewportPoint(gameCamera.CFrame:pointToWorldSpace(gameCamera.CFrame:PointToObjectSpace(pos)))
+		local newpos = gameCamera:WorldToViewportPoint(gameCamera.CFrame:PointToWorldSpace(gameCamera.CFrame:PointToObjectSpace(pos)))
 		return Vector2.new(newpos.X, newpos.Y)
 	end
-	
-	local ESPAdded = {
-		Drawing2D = function(ent)
-			if not Targets.Players.Enabled and ent.Player then return end
-			if not Targets.NPCs.Enabled and ent.NPC then return end
-			if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) then return end
-			if vape.ThreadFix then
-				setthreadidentity(8)
-			end
-			local EntityESP = {}
-			EntityESP.Main = Drawing.new('Square')
-			EntityESP.Main.Transparency = BoundingBox.Enabled and 1 or 0
-			EntityESP.Main.ZIndex = 2
-			EntityESP.Main.Filled = false
-			EntityESP.Main.Thickness = 1
-			EntityESP.Main.Color = entitylib.getEntityColor(ent) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
-	
-			if BoundingBox.Enabled then
-				EntityESP.Border = Drawing.new('Square')
-				EntityESP.Border.Transparency = 0.35
-				EntityESP.Border.ZIndex = 1
-				EntityESP.Border.Thickness = 1
-				EntityESP.Border.Filled = false
-				EntityESP.Border.Color = Color3.new()
-				EntityESP.Border2 = Drawing.new('Square')
-				EntityESP.Border2.Transparency = 0.35
-				EntityESP.Border2.ZIndex = 1
-				EntityESP.Border2.Thickness = 1
-				EntityESP.Border2.Filled = Filled.Enabled
-				EntityESP.Border2.Color = Color3.new()
-			end
-	
-			if HealthBar.Enabled then
-				EntityESP.HealthLine = Drawing.new('Line')
-				EntityESP.HealthLine.Thickness = 1
-				EntityESP.HealthLine.ZIndex = 2
-				EntityESP.HealthLine.Color = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
-				EntityESP.HealthBorder = Drawing.new('Line')
-				EntityESP.HealthBorder.Thickness = 3
-				EntityESP.HealthBorder.Transparency = 0.35
-				EntityESP.HealthBorder.ZIndex = 1
-				EntityESP.HealthBorder.Color = Color3.new()
-			end
-			
-			if Name.Enabled then
-				if Background.Enabled then
-					EntityESP.TextBKG = Drawing.new('Square')
-					EntityESP.TextBKG.Transparency = 0.35
-					EntityESP.TextBKG.ZIndex = 0
-					EntityESP.TextBKG.Thickness = 1
-					EntityESP.TextBKG.Filled = true
-					EntityESP.TextBKG.Color = Color3.new()
-				end
-				EntityESP.Drop = Drawing.new('Text')
-				EntityESP.Drop.Color = Color3.new()
-				EntityESP.Drop.Text = ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
-				EntityESP.Drop.ZIndex = 1
-				EntityESP.Drop.Center = true
-				EntityESP.Drop.Size = 20
-				EntityESP.Text = Drawing.new('Text')
-				EntityESP.Text.Text = EntityESP.Drop.Text
-				EntityESP.Text.ZIndex = 2
-				EntityESP.Text.Color = EntityESP.Main.Color
-				EntityESP.Text.Center = true
-				EntityESP.Text.Size = 20
-			end
 
-			-- image above box
-			EntityESP.Image = Drawing.new("Image")
-			EntityESP.Image.Data = "rbxassetid://14736249347" -- replace with whatever you want
-			EntityESP.Image.Size = Vector2.new(32, 32)
-			EntityESP.Image.Visible = true
-			EntityESP.Image.Transparency = 0
+	local function CreateESPForEntity(ent)
+		if Reference[ent] then return end
 
-			Reference[ent] = EntityESP
-		end,
-		Drawing3D = function(ent)
-			if not Targets.Players.Enabled and ent.Player then return end
-			if not Targets.NPCs.Enabled and ent.NPC then return end
-			if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) then return end
-			if vape.ThreadFix then
-				setthreadidentity(8)
+		if not Targets.Players.Enabled and ent.Player then return end
+		if not Targets.NPCs.Enabled and ent.NPC then return end
+		if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) then return end
+
+		local EntityESP = {}
+		EntityESP.Main = Drawing.new('Square')
+		EntityESP.Main.Transparency = BoundingBox.Enabled and 1 or 0
+		EntityESP.Main.ZIndex = 2
+		EntityESP.Main.Filled = false
+		EntityESP.Main.Thickness = 1
+		EntityESP.Main.Color = entitylib.getEntityColor(ent, Color)
+
+		if BoundingBox.Enabled then
+			EntityESP.Border = Drawing.new('Square')
+			EntityESP.Border.Transparency = 0.35
+			EntityESP.Border.ZIndex = 1
+			EntityESP.Border.Thickness = 1
+			EntityESP.Border.Filled = false
+			EntityESP.Border.Color = Color3.new()
+
+			EntityESP.Border2 = Drawing.new('Square')
+			EntityESP.Border2.Transparency = 0.35
+			EntityESP.Border2.ZIndex = 1
+			EntityESP.Border2.Thickness = 1
+			EntityESP.Border2.Filled = Filled.Enabled
+			EntityESP.Border2.Color = Color3.new()
+		end
+
+		if HealthBar.Enabled then
+			EntityESP.HealthLine = Drawing.new('Line')
+			EntityESP.HealthLine.Thickness = 1
+			EntityESP.HealthLine.ZIndex = 2
+			EntityESP.HealthLine.Color = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
+			EntityESP.HealthBorder = Drawing.new('Line')
+			EntityESP.HealthBorder.Thickness = 3
+			EntityESP.HealthBorder.Transparency = 0.35
+			EntityESP.HealthBorder.ZIndex = 1
+			EntityESP.HealthBorder.Color = Color3.new()
+		end
+
+		if Name.Enabled then
+			if Background.Enabled then
+				EntityESP.TextBKG = Drawing.new('Square')
+				EntityESP.TextBKG.Transparency = 0.35
+				EntityESP.TextBKG.ZIndex = 0
+				EntityESP.TextBKG.Thickness = 1
+				EntityESP.TextBKG.Filled = true
+				EntityESP.TextBKG.Color = Color3.new()
 			end
-			local EntityESP = {}
-			EntityESP.Line1 = Drawing.new('Line')
-			EntityESP.Line2 = Drawing.new('Line')
-			EntityESP.Line3 = Drawing.new('Line')
-			EntityESP.Line4 = Drawing.new('Line')
-			EntityESP.Line5 = Drawing.new('Line')
-			EntityESP.Line6 = Drawing.new('Line')
-			EntityESP.Line7 = Drawing.new('Line')
-			EntityESP.Line8 = Drawing.new('Line')
-			EntityESP.Line9 = Drawing.new('Line')
-			EntityESP.Line10 = Drawing.new('Line')
-			EntityESP.Line11 = Drawing.new('Line')
-			EntityESP.Line12 = Drawing.new('Line')
-	
-			local color = entitylib.getEntityColor(ent) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
+			EntityESP.Drop = Drawing.new('Text')
+			EntityESP.Drop.Color = Color3.new()
+			EntityESP.Drop.Text = ent.Player and (DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
+			EntityESP.Drop.ZIndex = 1
+			EntityESP.Drop.Center = true
+			EntityESP.Drop.Size = 20
+			EntityESP.Text = Drawing.new('Text')
+			EntityESP.Text.Text = EntityESP.Drop.Text
+			EntityESP.Text.ZIndex = 2
+			EntityESP.Text.Color = EntityESP.Main.Color
+			EntityESP.Text.Center = true
+			EntityESP.Text.Size = 20
+		end
+
+		Reference[ent] = EntityESP
+	end
+
+	local function RemoveESPForEntity(ent)
+		local EntityESP = Reference[ent]
+		if EntityESP then
 			for _, v in EntityESP do
-				v.Thickness = 1
-				v.Color = color
+				pcall(function()
+					v.Visible = false
+					v:Remove()
+				end)
 			end
-	
-			Reference[ent] = EntityESP
-		end,
-		DrawingSkeleton = function(ent)
-			if not Targets.Players.Enabled and ent.Player then return end
-			if not Targets.NPCs.Enabled and ent.NPC then return end
-			if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) then return end
-			if vape.ThreadFix then
-				setthreadidentity(8)
-			end
-			local EntityESP = {}
-			EntityESP.Head = Drawing.new('Line')
-			EntityESP.HeadFacing = Drawing.new('Line')
-			EntityESP.Torso = Drawing.new('Line')
-			EntityESP.UpperTorso = Drawing.new('Line')
-			EntityESP.LowerTorso = Drawing.new('Line')
-			EntityESP.LeftArm = Drawing.new('Line')
-			EntityESP.RightArm = Drawing.new('Line')
-			EntityESP.LeftLeg = Drawing.new('Line')
-			EntityESP.RightLeg = Drawing.new('Line')
-	
-			local color = entitylib.getEntityColor(ent) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
-			for _, v in EntityESP do
-				v.Thickness = 2
-				v.Color = color
-			end
-	
-			Reference[ent] = EntityESP
+			Reference[ent] = nil
 		end
-	}
-	
-	local ESPRemoved = {
-		Drawing2D = function(ent)
-			local EntityESP = Reference[ent]
-			if EntityESP then
-				if vape.ThreadFix then
-					setthreadidentity(8)
-				end
-				Reference[ent] = nil
-				for _, v in EntityESP do
-					pcall(function()
-						v.Visible = false
-						v:Remove()
-					end)
-				end
+	end
+
+	local function UpdateESPForEntity(ent)
+		local EntityESP = Reference[ent]
+		if not EntityESP then return end
+
+		if EntityESP.HealthLine then
+			EntityESP.HealthLine.Color = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
+		end
+		if EntityESP.Text then
+			local text = ent.Player and (DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
+			EntityESP.Text.Text = text
+			EntityESP.Drop.Text = text
+		end
+	end
+
+	local function UpdateColors()
+		local color = Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
+		for ent, v in pairs(Reference) do
+			v.Main.Color = entitylib.getEntityColor(ent, Color)
+			if v.Text then
+				v.Text.Color = v.Main.Color
 			end
 		end
-	}
-	ESPRemoved.Drawing3D = ESPRemoved.Drawing2D
-	ESPRemoved.DrawingSkeleton = ESPRemoved.Drawing2D
-	
-	local ESPUpdated = {
-		Drawing2D = function(ent)
-			local EntityESP = Reference[ent]
-			if EntityESP then
-				if vape.ThreadFix then
-					setthreadidentity(8)
-				end
-				
-				if EntityESP.HealthLine then
-					EntityESP.HealthLine.Color = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
-				end
-	
-				if EntityESP.Text then
-					EntityESP.Text.Text = ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
-					EntityESP.Drop.Text = EntityESP.Text.Text
-				end
-			end
-		end
-	}
-	
-	local ColorFunc = {
-		Drawing2D = function(hue, sat, val)
-			local color = Color3.fromHSV(hue, sat, val)
-			for i, v in Reference do
-				v.Main.Color = entitylib.getEntityColor(i) or color
-				if v.Text then
-					v.Text.Color = v.Main.Color
-				end
-			end
-		end,
-		Drawing3D = function(hue, sat, val)
-			local color = Color3.fromHSV(hue, sat, val)
-			for i, v in Reference do
-				local playercolor = entitylib.getEntityColor(i) or color
-				for _, v2 in v do
-					v2.Color = playercolor
-				end
-			end
-		end
-	}
-	ColorFunc.DrawingSkeleton = ColorFunc.Drawing3D
-	
-	local ESPLoop = {
-		Drawing2D = function()
-			for ent, EntityESP in Reference do
-				if Distance.Enabled then
-					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
-					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
-						for _, obj in EntityESP do
-							obj.Visible = false
-						end
-						continue
+	end
+
+	local function ESPLoop()
+		for ent, esp in pairs(Reference) do
+			if Distance.Enabled then
+				local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
+				if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
+					for _, obj in esp do
+						obj.Visible = false
 					end
+					continue
 				end
-	
-				local rootPos, rootVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position)
-				for _, obj in EntityESP do
-					obj.Visible = rootVis
-				end
-				if not rootVis then continue end
-	
-				local topPos = gameCamera:WorldToViewportPoint((CFrame.lookAlong(ent.RootPart.Position, gameCamera.CFrame.LookVector) * CFrame.new(2, ent.HipHeight, 0)).p)
-				local bottomPos = gameCamera:WorldToViewportPoint((CFrame.lookAlong(ent.RootPart.Position, gameCamera.CFrame.LookVector) * CFrame.new(-2, -ent.HipHeight - 1, 0)).p)
-				local sizex, sizey = topPos.X - bottomPos.X, topPos.Y - bottomPos.Y
-				local posx, posy = (rootPos.X - sizex / 2),  ((rootPos.Y - sizey / 2))
-				EntityESP.Main.Position = Vector2.new(posx, posy) // 1
-				EntityESP.Main.Size = Vector2.new(sizex, sizey) // 1
-				if EntityESP.Border then
-					EntityESP.Border.Position = Vector2.new(posx - 1, posy + 1) // 1
-					EntityESP.Border.Size = Vector2.new(sizex + 2, sizey - 2) // 1
-					EntityESP.Border2.Position = Vector2.new(posx + 1, posy - 1) // 1
-					EntityESP.Border2.Size = Vector2.new(sizex - 2, sizey + 2) // 1
-				end
-	
-				if EntityESP.HealthLine then
-					local healthposy = sizey * math.clamp(ent.Health / ent.MaxHealth, 0, 1)
-					EntityESP.HealthLine.Visible = ent.Health > 0
-					EntityESP.HealthLine.From = Vector2.new(posx - 6, posy + (sizey - (sizey - healthposy))) // 1
-					EntityESP.HealthLine.To = Vector2.new(posx - 6, posy) // 1
-					EntityESP.HealthBorder.From = Vector2.new(posx - 6, posy + 1) // 1
-					EntityESP.HealthBorder.To = Vector2.new(posx - 6, (posy + sizey) - 1) // 1
-				end
-	
-				if EntityESP.Text then
-					EntityESP.Text.Position = Vector2.new(posx + (sizex / 2), posy + (sizey - 28)) // 1
-					EntityESP.Drop.Position = EntityESP.Text.Position + Vector2.new(1, 1)
-					if EntityESP.TextBKG then
-						EntityESP.TextBKG.Size = EntityESP.Text.TextBounds + Vector2.new(8, 4)
-						EntityESP.TextBKG.Position = EntityESP.Text.Position - Vector2.new(4 + (EntityESP.Text.TextBounds.X / 2), 0)
-					end
-				end
+			end
 
-				-- position image just above bounding box
-				if EntityESP.Image then
-					local imageX = posx + (sizex / 2) - (EntityESP.Image.Size.X / 2)
-					local imageY = posy - EntityESP.Image.Size.Y - 5 -- 5 px above box
-					EntityESP.Image.Position = Vector2.new(imageX, imageY)
-					EntityESP.Image.Visible = rootVis
+			local rootPos, rootVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position)
+			for _, obj in esp do
+				obj.Visible = rootVis
+			end
+			if not rootVis then continue end
+
+			local topPos = gameCamera:WorldToViewportPoint((CFrame.lookAlong(ent.RootPart.Position, gameCamera.CFrame.LookVector) * CFrame.new(2, ent.HipHeight, 0)).p)
+			local bottomPos = gameCamera:WorldToViewportPoint((CFrame.lookAlong(ent.RootPart.Position, gameCamera.CFrame.LookVector) * CFrame.new(-2, -ent.HipHeight - 1, 0)).p)
+			local sizex, sizey = topPos.X - bottomPos.X, topPos.Y - bottomPos.Y
+			local posx, posy = (rootPos.X - sizex / 2),  ((rootPos.Y - sizey / 2))
+			esp.Main.Position = Vector2.new(posx, posy) // 1
+			esp.Main.Size = Vector2.new(sizex, sizey) // 1
+			if esp.Border then
+				esp.Border.Position = Vector2.new(posx - 1, posy + 1) // 1
+				esp.Border.Size = Vector2.new(sizex + 2, sizey - 2) // 1
+				esp.Border2.Position = Vector2.new(posx + 1, posy - 1) // 1
+				esp.Border2.Size = Vector2.new(sizex - 2, sizey + 2) // 1
+			end
+
+			if esp.HealthLine then
+				local healthposy = sizey * math.clamp(ent.Health / ent.MaxHealth, 0, 1)
+				esp.HealthLine.Visible = ent.Health > 0
+				esp.HealthLine.From = Vector2.new(posx - 6, posy + (sizey - (sizey - healthposy))) // 1
+				esp.HealthLine.To = Vector2.new(posx - 6, posy) // 1
+				esp.HealthBorder.From = Vector2.new(posx - 6, posy + 1) // 1
+				esp.HealthBorder.To = Vector2.new(posx - 6, (posy + sizey) - 1) // 1
+			end
+
+			if esp.Text then
+				esp.Text.Position = Vector2.new(posx + (sizex / 2), posy + (sizey - 28)) // 1
+				esp.Drop.Position = esp.Text.Position + Vector2.new(1, 1)
+				if esp.TextBKG then
+					esp.TextBKG.Size = esp.Text.TextBounds + Vector2.new(8, 4)
+					esp.TextBKG.Position = esp.Text.Position - Vector2.new(4 + (esp.Text.TextBounds.X / 2), 0)
 				end
+			end
+		end
+	end
+
+	local function AddAllEntities()
+		for _, ent in pairs(workspace:GetChildren()) do
+			if ent:FindFirstChild("RootPart") and (ent.Player or ent.NPC) then
+				CreateESPForEntity(ent)
+			end
+		end
+	end
+
+	local function ClearAll()
+		for ent in pairs(Reference) do
+			RemoveESPForEntity(ent)
+		end
+	end
+
+	local module = vape.Categories.Render:CreateModule({
+		Name = "ESP",
+		Function = function(enabled)
+			ESPEnabled = enabled
+			if enabled then
+				AddAllEntities()
+				RenderStepped = RunService.RenderStepped:Connect(function()
+					ESPLoop()
+				end)
+			else
+				if RenderStepped then
+					RenderStepped:Disconnect()
+					RenderStepped = nil
+				end
+				ClearAll()
 			end
 		end,
-		Drawing3D = function()
-			for ent, EntityESP in Reference do
-				if Distance.Enabled then
-					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
-					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
-						for _, obj in EntityESP do
-							obj.Visible = false
-						end
-						continue
-					end
-				end
-	
-				local _, rootVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position)
-				for _, obj in EntityESP do
-					obj.Visible = rootVis
-				end
-				if not rootVis then continue end
-	
-				local point1 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(1.5, ent.HipHeight, 1.5))
-				local point2 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(1.5, -ent.HipHeight, 1.5))
-				local point3 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(-1.5, ent.HipHeight, 1.5))
-				local point4 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(-1.5, -ent.HipHeight, 1.5))
-				local point5 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(1.5, ent.HipHeight, -1.5))
-				local point6 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(1.5, -ent.HipHeight, -1.5))
-				local point7 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(-1.5, ent.HipHeight, -1.5))
-				local point8 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(-1.5, -ent.HipHeight, -1.5))
-				EntityESP.Line1.From = point1
-				EntityESP.Line1.To = point2
-				EntityESP.Line2.From = point3
-				EntityESP.Line2.To = point4
-				EntityESP.Line3.From = point5
-				EntityESP.Line3.To = point6
-				EntityESP.Line4.From = point7
-				EntityESP.Line4.To = point8
-				EntityESP.Line5.From = point1
-				EntityESP.Line5.To = point3
-				EntityESP.Line6.From = point1
-				EntityESP.Line6.To = point5
-				EntityESP.Line7.From = point5
-				EntityESP.Line7.To = point7
-				EntityESP.Line8.From = point7
-				EntityESP.Line8.To = point3
-				EntityESP.Line9.From = point2
-				EntityESP.Line9.To = point4
-				EntityESP.Line10.From = point2
-				EntityESP.Line10.To = point6
-				EntityESP.Line11.From = point6
-				EntityESP.Line11.To = point8
-				EntityESP.Line12.From = point8
-				EntityESP.Line12.To = point4
-			end
-		end,
-		DrawingSkeleton = function()
-			for ent, EntityESP in Reference do
-				if Distance.Enabled then
-					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
-					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
-						for _, obj in EntityESP do
-							obj.Visible = false
-						end
-						continue
-					end
-				end
-	
-				local _, rootVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position)
-				for _, obj in EntityESP do
-					obj.Visible = rootVis
-				end
-				if not rootVis then continue end
-	
-				local headPos = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1.5, 0))
-				local torsoPos = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(0, ent.HipHeight, 0))
-				local leftArmPos = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(-1.5, ent.HipHeight, 0))
-				local rightArmPos = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(1.5, ent.HipHeight, 0))
-				local leftLegPos = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(-0.5, 0, 0))
-				local rightLegPos = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(0.5, 0, 0))
-	
-				EntityESP.Head.From = headPos
-				EntityESP.Head.To = torsoPos
-				EntityESP.HeadFacing.From = headPos
-				EntityESP.HeadFacing.To = headPos + Vector2.new(0, -15)
-				EntityESP.Torso.From = torsoPos
-				EntityESP.Torso.To = Vector2.new(torsoPos.X, torsoPos.Y + 20)
-				EntityESP.UpperTorso.From = torsoPos
-				EntityESP.UpperTorso.To = Vector2.new(torsoPos.X, torsoPos.Y - 20)
-				EntityESP.LowerTorso.From = torsoPos
-				EntityESP.LowerTorso.To = Vector2.new(torsoPos.X, torsoPos.Y + 20)
-				EntityESP.LeftArm.From = torsoPos
-				EntityESP.LeftArm.To = leftArmPos
-				EntityESP.RightArm.From = torsoPos
-				EntityESP.RightArm.To = rightArmPos
-				EntityESP.LeftLeg.From = torsoPos
-				EntityESP.LeftLeg.To = leftLegPos
-				EntityESP.RightLeg.From = torsoPos
-				EntityESP.RightLeg.To = rightLegPos
-			end
+		Tooltip = "Show ESP on players and NPCs"
+	})
+
+	module:CreateColorSlider({
+		Name = "Color",
+		Function = function(h, s, v)
+			Color.Hue = h
+			Color.Sat = s
+			Color.Value = v
+			UpdateColors()
 		end
-	}
+	})
 
-	local function Initialize()
-		Color = {
-			Hue = 0.35,
-			Sat = 1,
-			Value = 1,
-		}
-		Method = "Drawing2D"
-		BoundingBox = {
-			Enabled = true
-		}
-		Filled = {
-			Enabled = true
-		}
-		HealthBar = {
-			Enabled = true
-		}
-		Name = {
-			Enabled = true
-		}
-		DisplayName = {
-			Enabled = false
-		}
-		Background = {
-			Enabled = true
-		}
-		Teammates = {
-			Enabled = false
-		}
-		Distance = {
-			Enabled = false
-		}
-		DistanceLimit = {
-			ValueMin = 0,
-			ValueMax = 1000,
-		}
-		Targets = {
-			Players = {
-				Enabled = true
-			},
-			NPCs = {
-				Enabled = true
-			}
-		}
-		gameCamera = workspace.CurrentCamera
-		entitylib = {
-			getEntityColor = function(ent)
-				if ent.Player then
-					return Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
-				else
-					return Color3.fromRGB(255, 255, 255)
-				end
-			end,
-			isAlive = true,
-			character = {
-				RootPart = {
-					Position = Vector3.new(0,0,0)
-				}
-			}
-		}
-	end
-
-	Initialize()
-
-	local function ESPAdd(ent)
-		if ESPAdded[Method] then
-			ESPAdded[Method](ent)
-		end
-	end
-
-	local function ESPRemove(ent)
-		if ESPRemoved[Method] then
-			ESPRemoved[Method](ent)
-		end
-	end
-
-	local function ESPUpdate(ent)
-		if ESPUpdated[Method] then
-			ESPUpdated[Method](ent)
-		end
-	end
-
-	local function ESPLoopFunc()
-		if ESPLoop[Method] then
-			ESPLoop[Method]()
-		end
-	end
-
-	ESP = {
-		Add = ESPAdd,
-		Remove = ESPRemove,
-		Update = ESPUpdate,
-		Loop = ESPLoopFunc,
-		ColorFunc = ColorFunc,
-		SetMethod = function(newMethod)
-			if ESPAdded[newMethod] then
-				Method = newMethod
-			end
-		end,
-	}
-
-	_G.ESP = ESP
 end)
+
 
 	
 run(function()
