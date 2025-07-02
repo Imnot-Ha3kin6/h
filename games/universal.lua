@@ -3922,7 +3922,7 @@ run(function()
 			txt.Size = 20
 		end
 
-		beforeimage:
+		-- beforeimage:
 		img = Drawing.new('Image')
 		img.ZIndex = 2
 		img.Data = "rbxassetid://14736249347"
