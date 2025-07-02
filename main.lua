@@ -1,117 +1,635 @@
-repeat task.wait() until game:IsLoaded()
-if shared.vape then shared.vape:Uninject() end
+-- Safe loading with error handling
+local success, Luxtl = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Luxware-UI-Library/main/Source.lua"))()
+end)
 
--- why do exploits fail to implement anything correctly? Is it really that hard?
-if identifyexecutor then
-	if table.find({'Argon', 'Wave'}, ({identifyexecutor()})[1]) then
-		getgenv().setthreadidentity = nil
-	end
+if not success then
+    warn("Failed to load Luxware UI Library: " .. tostring(Luxtl))
+    return
 end
 
-local vape
-local loadstring = function(...)
-	local res, err = loadstring(...)
-	if err and vape then
-		vape:CreateNotification('Vape', 'Failed to load : '..err, 30, 'alert')
-	end
-	return res
+if not Luxtl then
+    warn("Luxware UI Library returned nil")
+    return
 end
-local queue_on_teleport = queue_on_teleport or function() end
-local isfile = isfile or function(file)
-	local suc, res = pcall(function()
-		return readfile(file)
-	end)
-	return suc and res ~= nil and res ~= ''
-end
-local cloneref = cloneref or function(obj)
-	return obj
-end
-local playersService = cloneref(game:GetService('Players'))
 
-local function downloadFile(path, func)
-	if not isfile(path) then
-		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/ImNot-Ha3kin6/h/'..readfile('newvape/profiles/commit.txt')..'/'..select(1, path:gsub('newvape/', '')), true)
-		end)
-		if not suc or res == '404: Not Found' then
-			error(res)
+-- Try alternative loading method if the first fails
+if not Luxtl.CreateWindow then
+    local success2, Luxtl2 = pcall(function()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Luxware-UI-Library/main/source.lua"))()
+    end)
+    
+    if success2 and Luxtl2 then
+        Luxtl = Luxtl2
+    else
+        warn("Both loading methods failed")
+        return
+    end
+end
+
+-- Create window
+local Luxt = Luxtl.CreateWindow("Cool Beanz Menu V2", 6105620301)
+
+-- Create Tabs
+local scriptsTab = Luxt:Tab("Scripts", 4483345998)
+local reskinsTab = Luxt:Tab("Reskins", 4483345998)
+local gamesTab = Luxt:Tab("Games", 4483345998)
+
+-- Scripts Tab Sections
+local universalSection = scriptsTab:Section("Universal")
+
+-- Mobile Cursor System (keeping the same implementation)
+local MobileCursor = {}
+MobileCursor.enabled = false
+MobileCursor.gui = nil
+MobileCursor.cursor = nil
+MobileCursor.connections = {}
+
+function MobileCursor:Create()
+    local Players = game:GetService("Players")
+    local UserInputService = game:GetService("UserInputService")
+    local RunService = game:GetService("RunService")
+    local TweenService = game:GetService("TweenService")
+    
+    local player = Players.LocalPlayer
+    local playerGui = player:WaitForChild("PlayerGui")
+    
+    -- Create main GUI
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "MobileCursorGUI"
+    screenGui.ResetOnSpawn = false
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.Parent = playerGui
+    
+    -- Create main frame
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0, 120, 0, 50)
+    mainFrame.Position = UDim2.new(0, 10, 0.5, -25)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Active = true
+    mainFrame.Draggable = true
+    mainFrame.Parent = screenGui
+    
+    -- Add corner radius
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = mainFrame
+    
+    -- Add stroke
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(70, 70, 70)
+    stroke.Thickness = 1
+    stroke.Parent = mainFrame
+    
+    -- Toggle button
+    local toggleButton = Instance.new("TextButton")
+    toggleButton.Name = "ToggleButton"
+    toggleButton.Size = UDim2.new(1, -10, 1, -10)
+    toggleButton.Position = UDim2.new(0, 5, 0, 5)
+    toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    toggleButton.BorderSizePixel = 0
+    toggleButton.Text = "Cursor: OFF"
+    toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggleButton.TextScaled = true
+    toggleButton.Font = Enum.Font.GothamBold
+    toggleButton.Parent = mainFrame
+    
+    -- Button corner
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 6)
+    buttonCorner.Parent = toggleButton
+    
+    -- Create cursor
+    local cursorFrame = Instance.new("Frame")
+    cursorFrame.Name = "Cursor"
+    cursorFrame.Size = UDim2.new(0, 20, 0, 20)
+    cursorFrame.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    cursorFrame.BorderSizePixel = 0
+    cursorFrame.Visible = false
+    cursorFrame.ZIndex = 1000
+    cursorFrame.Parent = screenGui
+    
+    -- Cursor design
+    local cursorCorner = Instance.new("UICorner")
+    cursorCorner.CornerRadius = UDim.new(0.5, 0)
+    cursorCorner.Parent = cursorFrame
+    
+    local cursorStroke = Instance.new("UIStroke")
+    cursorStroke.Color = Color3.fromRGB(255, 255, 255)
+    cursorStroke.Thickness = 2
+    cursorStroke.Parent = cursorFrame
+    
+    -- Cursor inner dot
+    local innerDot = Instance.new("Frame")
+    innerDot.Size = UDim2.new(0, 6, 0, 6)
+    innerDot.Position = UDim2.new(0.5, -3, 0.5, -3)
+    innerDot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    innerDot.BorderSizePixel = 0
+    innerDot.Parent = cursorFrame
+    
+    local innerCorner = Instance.new("UICorner")
+    innerCorner.CornerRadius = UDim.new(0.5, 0)
+    innerCorner.Parent = innerDot
+    
+    self.gui = screenGui
+    self.cursor = cursorFrame
+    self.toggleButton = toggleButton
+    
+    -- Touch handling
+    local function handleTouch(input)
+        if not self.enabled then return end
+        
+        local camera = workspace.CurrentCamera
+        local screenPoint = Vector2.new(input.Position.X, input.Position.Y)
+        local unitRay = camera:ScreenPointToRay(screenPoint.X, screenPoint.Y)
+        
+        -- Update cursor position
+        cursorFrame.Position = UDim2.new(0, screenPoint.X - 10, 0, screenPoint.Y - 10)
+        
+        -- Simulate click
+        if input.UserInputState == Enum.UserInputState.Begin then
+            -- Click animation
+            local clickTween = TweenService:Create(cursorFrame, 
+                TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
+                {Size = UDim2.new(0, 16, 0, 16)}
+            )
+            clickTween:Play()
+            
+            clickTween.Completed:Connect(function()
+                local returnTween = TweenService:Create(cursorFrame, 
+                    TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
+                    {Size = UDim2.new(0, 20, 0, 20)}
+                )
+                returnTween:Play()
+            end)
+            
+            -- Perform raycast click
+            local raycastParams = RaycastParams.new()
+            raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+            raycastParams.FilterDescendantsInstances = {player.Character}
+            
+            local raycastResult = workspace:Raycast(unitRay.Origin, unitRay.Direction * 1000, raycastParams)
+            
+            if raycastResult then
+                local hitPart = raycastResult.Instance
+                local clickDetector = hitPart:FindFirstChildOfClass("ClickDetector")
+                if clickDetector then
+                    fireclickdetector(clickDetector)
+                end
+            end
+        end
+    end
+    
+    -- Toggle function
+    local function toggleCursor()
+        self.enabled = not self.enabled
+        cursorFrame.Visible = self.enabled
+        
+        if self.enabled then
+            toggleButton.Text = "Cursor: ON"
+            toggleButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+            
+            -- Connect touch events
+            self.connections.touch = UserInputService.TouchStarted:Connect(handleTouch)
+            self.connections.touchMove = UserInputService.TouchMoved:Connect(handleTouch)
+            
+            -- Pulse animation for cursor
+            local function pulseCursor()
+                if self.enabled then
+                    local pulseTween = TweenService:Create(cursorStroke, 
+                        TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), 
+                        {Transparency = 0.5}
+                    )
+                    pulseTween:Play()
+                    self.connections.pulse = pulseTween
+                end
+            end
+            pulseCursor()
+            
+        else
+            toggleButton.Text = "Cursor: OFF"
+            toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            
+            -- Disconnect events
+            for _, connection in pairs(self.connections) do
+                if connection then
+                    connection:Disconnect()
+                end
+            end
+            self.connections = {}
+        end
+    end
+    
+    -- Button click event
+    toggleButton.MouseButton1Click:Connect(toggleCursor)
+    
+    -- Click on cursor to disable
+    cursorFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            toggleCursor()
+        end
+    end)
+    
+    -- Smooth entrance animation
+    mainFrame.Position = UDim2.new(0, -130, 0.5, -25)
+    local entranceTween = TweenService:Create(mainFrame, 
+        TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), 
+        {Position = UDim2.new(0, 10, 0.5, -25)}
+    )
+    entranceTween:Play()
+    
+    return screenGui
+end
+
+function MobileCursor:Destroy()
+    if self.gui then
+        self.gui:Destroy()
+    end
+    for _, connection in pairs(self.connections) do
+        if connection then
+            connection:Disconnect()
+        end
+    end
+end
+
+-- Add buttons to Scripts Tab
+universalSection:Button("Mobile Cursor", function()
+    if MobileCursor.gui then
+        MobileCursor:Destroy()
+    end
+    MobileCursor:Create()
+    print("Mobile cursor GUI loaded! Drag the button to move it around.")
+end)
+
+universalSection:Button("Thunder Client Mob Fixer", function()
+    local UserInputService = game:GetService("UserInputService")
+    local CoreGui = game:GetService("CoreGui")
+
+    local screenGui = CoreGui:FindFirstChild("ScreenGui")
+    if not screenGui then
+        warn("ScreenGui not found in CoreGui 😭")
+        return
+    end
+
+    local textButton = screenGui:FindFirstChild("TextButton")
+    if not textButton then
+        warn("TextButton not found in ScreenGui 💀")
+        return
+    end
+
+    -- Resize
+    local targetSize = UDim2.new(0, 293, 0, 400)
+    textButton.Size = targetSize
+
+    -- Resize ScrollingFrame if it exists
+    local scroll = textButton:FindFirstChildWhichIsA("ScrollingFrame", true)
+    if scroll then
+        scroll.Size = targetSize
+    else
+        warn("ScrollingFrame not found in TextButton 😔")
+    end
+
+    -- Draggable Script (works for mobile + PC)
+    local dragging = false
+    local dragInput, dragStart, startPos
+
+    local function update(input)
+        local delta = input.Position - dragStart
+        textButton.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
+    end
+
+    textButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = textButton.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    textButton.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input == dragInput then
+            update(input)
+        end
+    end)
+end)
+
+universalSection:Button("Infinite Yield", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+end)
+
+universalSection:Button("Quotas Hub", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Insertl/QuotasHub/main/BETAv1.3"))()
+end)
+
+-- Games Tab Sections & Buttons
+local arsenalSection = gamesTab:Section("Arsenal")
+
+arsenalSection:Button("Thunder Client (OP AS SHIT)", function()
+    getgenv().thunderclient = true
+    loadstring(game:HttpGet("https://api.luarmor.net/files/v3/verified/dca3e69649ed196af0ac6577f743a0ae.lua"))()
+end)
+
+local tsbSection = gamesTab:Section("TSB")
+
+tsbSection:Button("Death Counter Identifier", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/louismich4el/ItsLouisPlayz-Scripts/main/TSB%20Death%20Counter%20Identifier.lua"))()
+end)
+
+tsbSection:Button("Instant Transmission", function()
+    local mouse = game.Players.LocalPlayer:GetMouse()
+    local tool = Instance.new("Tool")
+    tool.RequiresHandle = false
+    tool.Name = "Instant Transmission"
+
+    local teleportAnimationId = "rbxassetid://15957361339"
+    local teleportSoundId = "rbxassetid://5066021887"
+
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+    local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
+
+    local teleportAnimation = Instance.new("Animation")
+    teleportAnimation.AnimationId = teleportAnimationId
+    local teleportTrack = animator:LoadAnimation(teleportAnimation)
+
+    local teleportSound = Instance.new("Sound")
+    teleportSound.SoundId = teleportSoundId
+    teleportSound.Parent = character:WaitForChild("HumanoidRootPart")
+
+    tool.Activated:Connect(function()
+        teleportTrack:Play()
+        teleportSound:Play()
+        local pos = mouse.Hit + Vector3.new(0, 2.5, 0)
+        pos = CFrame.new(pos.X, pos.Y, pos.Z)
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pos
+    end)
+
+    tool.Parent = player.Backpack
+end)
+
+local trollSection = gamesTab:Section("Troll / Cursing")
+
+trollSection:Button("Better Bypasser", function()
+    loadstring(game:HttpGet("https://github.com/Synergy-Networks/products/raw/main/BetterBypasser/loader.lua"))()
+end)
+
+local bedwarsSection = gamesTab:Section("Bedwars")
+
+bedwarsSection:Button("Vape V4 Voidware", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/VapeVoidware/VWExtra/main/installer.lua", true))()
+end)
+
+-- Reskins Tab Sections
+local saitamaSection = reskinsTab:Section("Saitama Reskins")
+
+saitamaSection:Button("KJ Reskin", function()
+    getgenv().Moveset_Settings = {
+        ["ExecuteOnRespawn"] = true,
+        ["TSBStyleNotification"] = true,
+        ["UseOldCollateralRuin"] = false,
+        ["NoWarning"] = true,
+        ["NoDeathCounterImages"] = true,
+        ["NoBarrageArms"] = true,
+        ["NoPreysPerilAttract"] = true,
+        ["NoWalls"] = false,
+        ["NoTrees"] = false,
+        ["RavageTool"] = false,
+        ["AdrenalineBoostTool"] = false,
+        ["Adrenaline_Multiplier"] = 2,
+        ["CustomUppercutAnimation"] = true,
+        ["CustomDownslamAnimation"] = true,
+        ["CustomIdleAnimation"] = true,
+        ["UltNames"] = { "20 SERIES", },
+        ["MoveNames"] = {
+            ["Normal Punch"] = "Ravaging Kick",
+            ["Consecutive Punches"] = "Fist Fusillade",
+            ["Shove"] = "Swift Sweep",
+            ["Uppercut"] = "Collateral Storm",
+            ["Death Counter"] = "Sudden Strike",
+            ["Table Flip"] = "Stoic Bomb",
+            ["Serious Punch"] = "Limited Flex Works",
+            ["Omni Directional Punch"] = "Omni Directional Fists"
+        }
+    }
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/skibiditoiletfan2007/BaldyToKJ/refs/heads/main/Latest.lua"))()
+end)
+
+saitamaSection:Button("Gojo Reskin", function()
+    getgenv().morph = true
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/skibiditoiletfan2007/BaldyToSorcerer/refs/heads/main/LatestV2.lua"))()
+end)
+
+-- The snitch troll script and animation lock script remain the same
+-- Adding them at the end since they run automatically
+
+-- 👑 Full Snitch Troll Script with Crash Loops + Smart Filter
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Your friend's exact username (case-sensitive)
+local snitchName = "GoneGoner3"
+
+-- Words that flag a snitch message
+local defenseTriggers = {
+	["is"] = true,
+	["are"] = true,
+	["hacks"] = true,
+	["hacking"] = true,
+	["cheating"] = true,
+	["has"] = true,
+	["them"] = true,
+	["gave"] = true,
+}
+
+-- Words that make us ignore the message (like "cap")
+local ignoreTriggers = {
+	["cap"] = true,
+}
+
+-- Smart detector: triggers only if 2+ flagged words found and no ignore words
+local function isSnitching(msg)
+	msg = msg:lower()
+	local susCount = 0
+
+	for word in pairs(defenseTriggers) do
+		if msg:find(word) then
+			susCount += 1
 		end
-		if path:find('.lua') then
-			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res
-		end
-		writefile(path, res)
 	end
-	return (func or readfile)(path)
+
+	for word in pairs(ignoreTriggers) do
+		if msg:find(word) then
+			return false
+		end
+	end
+
+	return susCount >= 2
 end
 
-local function finishLoading()
-	vape.Init = nil
-	vape:Load()
-	task.spawn(function()
-		repeat
-			vape:Save()
-			task.wait(10)
-		until not vape.Loaded
-	end)
+-- Crash loop: freezes client for given seconds
+local function crashLoop(seconds)
+	local start = tick()
+	while tick() - start < seconds do
+		local a = 0
+		a = a + 1
+	end
+end
 
-	local teleportedServers
-	vape:Clean(playersService.LocalPlayer.OnTeleport:Connect(function()
-		if (not teleportedServers) and (not shared.VapeIndependent) then
-			teleportedServers = true
-			local teleportScript = [[
-				shared.vapereload = true
-				if shared.VapeDeveloper then
-					loadstring(readfile('newvape/loader.lua'), 'loader')()
-				else
-					loadstring(game:HttpGet('https://raw.githubusercontent.com/ImNot-Ha3kin6/h/'..readfile('newvape/profiles/commit.txt')..'/loader.lua', true), 'loader')()
+-- Chat commands that trigger troll effects with crash loops
+local trollCommands = {
+	["lg"] = function()
+		crashLoop(5) -- freeze 5 seconds
+	end,
+	["lg2"] = function()
+		crashLoop(3) -- freeze 3 seconds
+	end,
+	["csh"] = function()
+		crashLoop(2) -- freeze 2 seconds
+	end,
+	["kic"] = function()
+		LocalPlayer:Kick("Trolled!")
+	end,
+}
+
+-- Sends auto defense message "he's not cheating"
+local function defend()
+    pcall(function()
+        ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("he's not cheating", "All")
+    end)
+end
+
+-- Cursor drift for mobile cursor GUI
+local function driftCursor()
+	while true do
+		task.wait(math.random(5, 9))
+		local gui = LocalPlayer:FindFirstChild("PlayerGui"):FindFirstChild("MobileCursorGUI")
+		if gui and gui:FindFirstChild("Cursor") then
+			local c = gui.Cursor
+			local newPos = c.Position + UDim2.new(0, math.random(-2, 2), 0, math.random(-2, 2))
+			c.Position = newPos
+		end
+	end
+end
+
+-- Random touch lag delay for mobile touches
+local function touchLag()
+	UserInputService.TouchStarted:Connect(function(input)
+		if LocalPlayer.Name == snitchName then
+			task.wait(math.random(10, 30) / 100) -- 0.1 to 0.3 sec delay
+		end
+	end)
+end
+
+-- Randomly disables one GUI button briefly
+local function disableRandomButton()
+	while true do
+		task.wait(math.random(15, 30))
+		if LocalPlayer.Name == snitchName then
+			local gui = LocalPlayer:FindFirstChild("PlayerGui")
+			if gui then
+				for _, btn in pairs(gui:GetDescendants()) do
+					if btn:IsA("TextButton") and btn.AutoButtonColor ~= false and btn.Active then
+						local oldState = btn.Active
+						btn.Active = false
+						task.wait(math.random(3, 6))
+						btn.Active = oldState
+						break
+					end
 				end
-			]]
-			if shared.VapeDeveloper then
-				teleportScript = 'shared.VapeDeveloper = true\n'..teleportScript
 			end
-			if shared.VapeCustomProfile then
-				teleportScript = 'shared.VapeCustomProfile = "'..shared.VapeCustomProfile..'"\n'..teleportScript
-			end
-			vape:Save()
-			queue_on_teleport(teleportScript)
-		end
-	end))
-
-	if not shared.vapereload then
-		if not vape.Categories then return end
-		if vape.Categories.Main.Options['GUI bind indicator'].Enabled then
-			vape:CreateNotification('Finished Loading', vape.VapeButton and 'Press the button in the top right to open GUI' or 'Press '..table.concat(vape.Keybind, ' + '):upper()..' to open GUI', 5)
 		end
 	end
 end
 
-if not isfile('newvape/profiles/gui.txt') then
-	writefile('newvape/profiles/gui.txt', 'new')
-end
-local gui = readfile('newvape/profiles/gui.txt')
+-- Setup troll effects for the snitch player
+local function setupSnitchTroll(player)
+	if player.Name ~= snitchName then return end
 
-if not isfolder('newvape/assets/'..gui) then
-	makefolder('newvape/assets/'..gui)
-end
-vape = loadstring(downloadFile('newvape/guis/'..gui..'.lua'), 'gui')()
-shared.vape = vape
+	player.Chatted:Connect(function(msg)
+		local lowerMsg = msg:lower()
 
-if not shared.VapeIndependent then
-	loadstring(downloadFile('newvape/games/universal.lua'), 'universal')()
-	if isfile('newvape/games/'..game.PlaceId..'.lua') then
-		loadstring(readfile('newvape/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(...)
-	else
-		if not shared.VapeDeveloper then
-			local suc, res = pcall(function()
-				return game:HttpGet('https://raw.githubusercontent.com/ImNot-Ha3kin6/h/'..readfile('newvape/profiles/commit.txt')..'/games/'..game.PlaceId..'.lua', true)
+		-- Check for snitching words first
+		if isSnitching(msg) then
+			task.spawn(defend)
+			task.spawn(function()
+				crashLoop(2)
 			end)
-			if suc and res ~= '404: Not Found' then
-				loadstring(downloadFile('newvape/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(...)
+		end
+
+		-- Check for chat commands to troll
+		for cmd, func in pairs(trollCommands) do
+			if lowerMsg == cmd then
+				func()
+				break
 			end
 		end
-	end
-	finishLoading()
-else
-	vape.Init = finishLoading
-	return vape
+	end)
+
+	task.spawn(driftCursor)
+	task.spawn(touchLag)
+	task.spawn(disableRandomButton)
 end
+
+-- Setup for all current players
+for _, player in ipairs(Players:GetPlayers()) do
+	setupSnitchTroll(player)
+end
+
+-- Setup for any new player that joins
+Players.PlayerAdded:Connect(setupSnitchTroll)
+
+-- Animation Lock Script
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+local function onCharacterAdded(character)
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    local humanoid = character:WaitForChild("Humanoid")
+
+    local ANIM_ID_TO_LOCK = 16431491215
+
+    local originalCFrame = nil
+    local isLocked = false
+
+    RunService.Heartbeat:Connect(function()
+        if isLocked and originalCFrame then
+            humanoidRootPart.CFrame = originalCFrame
+        end
+    end)
+
+    humanoid.AnimationPlayed:Connect(function(track)
+        if track.Animation.AnimationId == "rbxassetid://" .. tostring(ANIM_ID_TO_LOCK) then
+            originalCFrame = humanoidRootPart.CFrame
+            isLocked = true
+
+            track.Stopped:Connect(function()
+                isLocked = false
+                originalCFrame = nil
+            end)
+        end
+    end)
+end
+
+if player.Character then
+    onCharacterAdded(player.Character)
+end
+player.CharacterAdded:Connect(onCharacterAdded)
