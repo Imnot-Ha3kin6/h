@@ -14,7 +14,7 @@ end
 local function downloadFile(path, func)
 	if not isfile(path) then
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/ImNot-Ha3kin6/H/'..readfile('newvape/profiles/commit.txt')..'/'..select(1, path:gsub('newvape/', '')), true)
+			return game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeV4ForRoblox/'..readfile('newvape/profiles/commit.txt')..'/'..select(1, path:gsub('newvape/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -3915,6 +3915,14 @@ run(function()
 				EntityESP.Text.Center = true
 				EntityESP.Text.Size = 20
 			end
+
+			-- image above box
+			EntityESP.Image = Drawing.new("Image")
+			EntityESP.Image.Data = "rbxassetid://14736249347" -- replace with whatever you want
+			EntityESP.Image.Size = Vector2.new(32, 32)
+			EntityESP.Image.Visible = true
+			EntityESP.Image.Transparency = 0
+
 			Reference[ent] = EntityESP
 		end,
 		Drawing3D = function(ent)
@@ -4085,6 +4093,14 @@ run(function()
 						EntityESP.TextBKG.Position = EntityESP.Text.Position - Vector2.new(4 + (EntityESP.Text.TextBounds.X / 2), 0)
 					end
 				end
+
+				-- position image just above bounding box
+				if EntityESP.Image then
+					local imageX = posx + (sizex / 2) - (EntityESP.Image.Size.X / 2)
+					local imageY = posy - EntityESP.Image.Size.Y - 5 -- 5 px above box
+					EntityESP.Image.Position = Vector2.new(imageX, imageY)
+					EntityESP.Image.Visible = rootVis
+				end
 			end
 		end,
 		Drawing3D = function()
@@ -4156,215 +4172,139 @@ run(function()
 					obj.Visible = rootVis
 				end
 				if not rootVis then continue end
-				
-				local rigcheck = ent.Humanoid.RigType == Enum.HumanoidRigType.R6
-				pcall(function()
-					local offset = rigcheck and CFrame.new(0, -0.8, 0) or CFrame.identity
-					local head = ESPWorldToViewport((ent.Head.CFrame).p)
-					local headfront = ESPWorldToViewport((ent.Head.CFrame * CFrame.new(0, 0, -0.5)).p)
-					local toplefttorso = ESPWorldToViewport((ent.Character[(rigcheck and 'Torso' or 'UpperTorso')].CFrame * CFrame.new(-1.5, 0.8, 0)).p)
-					local toprighttorso = ESPWorldToViewport((ent.Character[(rigcheck and 'Torso' or 'UpperTorso')].CFrame * CFrame.new(1.5, 0.8, 0)).p)
-					local toptorso = ESPWorldToViewport((ent.Character[(rigcheck and 'Torso' or 'UpperTorso')].CFrame * CFrame.new(0, 0.8, 0)).p)
-					local bottomtorso = ESPWorldToViewport((ent.Character[(rigcheck and 'Torso' or 'UpperTorso')].CFrame * CFrame.new(0, -0.8, 0)).p)
-					local bottomlefttorso = ESPWorldToViewport((ent.Character[(rigcheck and 'Torso' or 'UpperTorso')].CFrame * CFrame.new(-0.5, -0.8, 0)).p)
-					local bottomrighttorso = ESPWorldToViewport((ent.Character[(rigcheck and 'Torso' or 'UpperTorso')].CFrame * CFrame.new(0.5, -0.8, 0)).p)
-					local leftarm = ESPWorldToViewport((ent.Character[(rigcheck and 'Left Arm' or 'LeftHand')].CFrame * offset).p)
-					local rightarm = ESPWorldToViewport((ent.Character[(rigcheck and 'Right Arm' or 'RightHand')].CFrame * offset).p)
-					local leftleg = ESPWorldToViewport((ent.Character[(rigcheck and 'Left Leg' or 'LeftFoot')].CFrame * offset).p)
-					local rightleg = ESPWorldToViewport((ent.Character[(rigcheck and 'Right Leg' or 'RightFoot')].CFrame * offset).p)
-					EntityESP.Head.From = toptorso
-					EntityESP.Head.To = head
-					EntityESP.HeadFacing.From = head
-					EntityESP.HeadFacing.To = headfront
-					EntityESP.UpperTorso.From = toplefttorso
-					EntityESP.UpperTorso.To = toprighttorso
-					EntityESP.Torso.From = toptorso
-					EntityESP.Torso.To = bottomtorso
-					EntityESP.LowerTorso.From = bottomlefttorso
-					EntityESP.LowerTorso.To = bottomrighttorso
-					EntityESP.LeftArm.From = toplefttorso
-					EntityESP.LeftArm.To = leftarm
-					EntityESP.RightArm.From = toprighttorso
-					EntityESP.RightArm.To = rightarm
-					EntityESP.LeftLeg.From = bottomlefttorso
-					EntityESP.LeftLeg.To = leftleg
-					EntityESP.RightLeg.From = bottomrighttorso
-					EntityESP.RightLeg.To = rightleg
-				end)
+	
+				local headPos = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1.5, 0))
+				local torsoPos = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(0, ent.HipHeight, 0))
+				local leftArmPos = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(-1.5, ent.HipHeight, 0))
+				local rightArmPos = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(1.5, ent.HipHeight, 0))
+				local leftLegPos = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(-0.5, 0, 0))
+				local rightLegPos = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(0.5, 0, 0))
+	
+				EntityESP.Head.From = headPos
+				EntityESP.Head.To = torsoPos
+				EntityESP.HeadFacing.From = headPos
+				EntityESP.HeadFacing.To = headPos + Vector2.new(0, -15)
+				EntityESP.Torso.From = torsoPos
+				EntityESP.Torso.To = Vector2.new(torsoPos.X, torsoPos.Y + 20)
+				EntityESP.UpperTorso.From = torsoPos
+				EntityESP.UpperTorso.To = Vector2.new(torsoPos.X, torsoPos.Y - 20)
+				EntityESP.LowerTorso.From = torsoPos
+				EntityESP.LowerTorso.To = Vector2.new(torsoPos.X, torsoPos.Y + 20)
+				EntityESP.LeftArm.From = torsoPos
+				EntityESP.LeftArm.To = leftArmPos
+				EntityESP.RightArm.From = torsoPos
+				EntityESP.RightArm.To = rightArmPos
+				EntityESP.LeftLeg.From = torsoPos
+				EntityESP.LeftLeg.To = leftLegPos
+				EntityESP.RightLeg.From = torsoPos
+				EntityESP.RightLeg.To = rightLegPos
 			end
 		end
 	}
-	
-	ESP = vape.Categories.Render:CreateModule({
-		Name = 'ESP',
-		Function = function(callback)
-			if callback then
-				methodused = 'Drawing'..Method.Value
-				if ESPRemoved[methodused] then
-					ESP:Clean(entitylib.Events.EntityRemoved:Connect(ESPRemoved[methodused]))
+
+	local function Initialize()
+		Color = {
+			Hue = 0.35,
+			Sat = 1,
+			Value = 1,
+		}
+		Method = "Drawing2D"
+		BoundingBox = {
+			Enabled = true
+		}
+		Filled = {
+			Enabled = true
+		}
+		HealthBar = {
+			Enabled = true
+		}
+		Name = {
+			Enabled = true
+		}
+		DisplayName = {
+			Enabled = false
+		}
+		Background = {
+			Enabled = true
+		}
+		Teammates = {
+			Enabled = false
+		}
+		Distance = {
+			Enabled = false
+		}
+		DistanceLimit = {
+			ValueMin = 0,
+			ValueMax = 1000,
+		}
+		Targets = {
+			Players = {
+				Enabled = true
+			},
+			NPCs = {
+				Enabled = true
+			}
+		}
+		gameCamera = workspace.CurrentCamera
+		entitylib = {
+			getEntityColor = function(ent)
+				if ent.Player then
+					return Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
+				else
+					return Color3.fromRGB(255, 255, 255)
 				end
-				if ESPAdded[methodused] then
-					for _, v in entitylib.List do
-						if Reference[v] then
-							ESPRemoved[methodused](v)
-						end
-						ESPAdded[methodused](v)
-					end
-					ESP:Clean(entitylib.Events.EntityAdded:Connect(function(ent)
-						if Reference[ent] then
-							ESPRemoved[methodused](ent)
-						end
-						ESPAdded[methodused](ent)
-					end))
-				end
-				if ESPUpdated[methodused] then
-					ESP:Clean(entitylib.Events.EntityUpdated:Connect(ESPUpdated[methodused]))
-					for _, v in entitylib.List do
-						ESPUpdated[methodused](v)
-					end
-				end
-				if ColorFunc[methodused] then
-					ESP:Clean(vape.Categories.Friends.ColorUpdate.Event:Connect(function()
-						ColorFunc[methodused](Color.Hue, Color.Sat, Color.Value)
-					end))
-				end
-				if ESPLoop[methodused] then
-					ESP:Clean(runService.RenderStepped:Connect(ESPLoop[methodused]))
-				end
-			else
-				if ESPRemoved[methodused] then
-					for i in Reference do
-						ESPRemoved[methodused](i)
-					end
-				end
-			end
-		end,
-		Tooltip = 'Extra Sensory Perception\nRenders an ESP on players.'
-	})
-	Targets = ESP:CreateTargets({
-		Players = true,
-		Function = function()
-			if ESP.Enabled then
-				ESP:Toggle()
-				ESP:Toggle()
-			end
+			end,
+			isAlive = true,
+			character = {
+				RootPart = {
+					Position = Vector3.new(0,0,0)
+				}
+			}
+		}
+	end
+
+	Initialize()
+
+	local function ESPAdd(ent)
+		if ESPAdded[Method] then
+			ESPAdded[Method](ent)
 		end
-	})
-	Method = ESP:CreateDropdown({
-		Name = 'Mode',
-		List = {'2D', '3D', 'Skeleton'},
-		Function = function(val)
-			if ESP.Enabled then
-				ESP:Toggle()
-				ESP:Toggle()
-			end
-			BoundingBox.Object.Visible = (val == '2D')
-			Filled.Object.Visible = (val == '2D')
-			HealthBar.Object.Visible = (val == '2D')
-			Name.Object.Visible = (val == '2D')
-			DisplayName.Object.Visible = Name.Object.Visible and Name.Enabled
-			Background.Object.Visible = Name.Object.Visible and Name.Enabled
-		end,
-	})
-	Color = ESP:CreateColorSlider({
-		Name = 'Player Color',
-		Function = function(hue, sat, val)
-			if ESP.Enabled and ColorFunc[methodused] then
-				ColorFunc[methodused](hue, sat, val)
-			end
+	end
+
+	local function ESPRemove(ent)
+		if ESPRemoved[Method] then
+			ESPRemoved[Method](ent)
 		end
-	})
-	BoundingBox = ESP:CreateToggle({
-		Name = 'Bounding Box',
-		Function = function()
-			if ESP.Enabled then
-				ESP:Toggle()
-				ESP:Toggle()
-			end
-		end,
-		Default = true,
-		Darker = true
-	})
-	Filled = ESP:CreateToggle({
-		Name = 'Filled',
-		Function = function()
-			if ESP.Enabled then
-				ESP:Toggle()
-				ESP:Toggle()
-			end
-		end,
-		Darker = true
-	})
-	HealthBar = ESP:CreateToggle({
-		Name = 'Health Bar',
-		Function = function()
-			if ESP.Enabled then
-				ESP:Toggle()
-				ESP:Toggle()
-			end
-		end,
-		Darker = true
-	})
-	Name = ESP:CreateToggle({
-		Name = 'Name',
-		Function = function(callback)
-			if ESP.Enabled then
-				ESP:Toggle()
-				ESP:Toggle()
-			end
-			DisplayName.Object.Visible = callback
-			Background.Object.Visible = callback
-		end,
-		Darker = true
-	})
-	DisplayName = ESP:CreateToggle({
-		Name = 'Use Displayname',
-		Function = function()
-			if ESP.Enabled then
-				ESP:Toggle()
-				ESP:Toggle()
-			end
-		end,
-		Default = true,
-		Darker = true
-	})
-	Background = ESP:CreateToggle({
-		Name = 'Show Background',
-		Function = function()
-			if ESP.Enabled then
-				ESP:Toggle()
-				ESP:Toggle()
-			end
-		end,
-		Darker = true
-	})
-	Teammates = ESP:CreateToggle({
-		Name = 'Priority Only',
-		Function = function()
-			if ESP.Enabled then
-				ESP:Toggle()
-				ESP:Toggle()
-			end
-		end,
-		Default = true,
-		Tooltip = 'Hides teammates & non targetable entities'
-	})
-	Distance = ESP:CreateToggle({
-		Name = 'Distance Check',
-		Function = function(callback)
-			DistanceLimit.Object.Visible = callback
+	end
+
+	local function ESPUpdate(ent)
+		if ESPUpdated[Method] then
+			ESPUpdated[Method](ent)
 		end
-	})
-	DistanceLimit = ESP:CreateTwoSlider({
-		Name = 'Player Distance',
-		Min = 0,
-		Max = 256,
-		DefaultMin = 0,
-		DefaultMax = 64,
-		Darker = true,
-		Visible = false
-	})
+	end
+
+	local function ESPLoopFunc()
+		if ESPLoop[Method] then
+			ESPLoop[Method]()
+		end
+	end
+
+	ESP = {
+		Add = ESPAdd,
+		Remove = ESPRemove,
+		Update = ESPUpdate,
+		Loop = ESPLoopFunc,
+		ColorFunc = ColorFunc,
+		SetMethod = function(newMethod)
+			if ESPAdded[newMethod] then
+				Method = newMethod
+			end
+		end,
+	}
+
+	_G.ESP = ESP
 end)
+
 	
 run(function()
 	local GamingChair = {Enabled = false}
