@@ -1152,7 +1152,7 @@ run(function()
 	local CircleFilled
 	local CircleObject
 	local Projectile
-	local ProjectileSpeed
+	local Projectileed
 	local ProjectileGravity
 	local RaycastWhitelist = RaycastParams.new()
 	RaycastWhitelist.FilterType = Enum.RaycastFilterType.Include
@@ -3832,250 +3832,236 @@ run(function()
 	local vape = shared.vape
 	if not vape or not vape.Categories or not vape.Categories.Render then return end
 
+	local UserInputService = game:GetService("UserInputService")
+	local RunService = game:GetService("RunService")
+	local Players = game:GetService("Players")
+	local LocalPlayer = Players.LocalPlayer
 	local gameCamera = workspace.CurrentCamera
-	local entitylib = {
-		getEntityColor = function(ent, color)
-			if ent.Player then
-				return Color3.fromHSV(color.Hue, color.Sat, color.Value)
-			else
-				return Color3.new(1, 1, 1)
-			end
-		end,
-		isAlive = true,
-		character = {
-			RootPart = {
-				Position = Vector3.new(0,0,0)
-			}
-		}
-	}
 
 	local Color = {Hue = 0.35, Sat = 1, Value = 1}
 	local Method = "Drawing2D"
-	local BoundingBox = {Enabled = true}
-	local Filled = {Enabled = true}
-	local HealthBar = {Enabled = true}
-	local Name = {Enabled = true}
-	local DisplayName = {Enabled = false}
-	local Background = {Enabled = true}
-	local Teammates = {Enabled = false}
-	local Distance = {Enabled = false}
-	local DistanceLimit = {ValueMin = 0, ValueMax = 1000}
-	local Targets = {
-		Players = {Enabled = true},
-		NPCs = {Enabled = true}
+	local options = {
+		BoundingBox = {Enabled = true},
+		Filled = {Enabled = false},
+		HealthBar = {Enabled = true},
+		Name = {Enabled = true},
+		DisplayName = {Enabled = false},
+		Background = {Enabled = true},
+		Teammates = {Enabled = false},
+		Distance = {Enabled = false},
+		DistanceLimit = {ValueMin = 0, ValueMax = 1000},
+		Targets = {Players = {Enabled = true}, NPCs = {Enabled = true}}
 	}
 
 	local Reference = {}
-	local RunService = game:GetService("RunService")
 	local RenderStepped
-	local ESPEnabled = false
 
 	local function ESPWorldToViewport(pos)
-		local newpos = gameCamera:WorldToViewportPoint(gameCamera.CFrame:PointToWorldSpace(gameCamera.CFrame:PointToObjectSpace(pos)))
-		return Vector2.new(newpos.X, newpos.Y)
+		local p = gameCamera:WorldToViewportPoint(pos)
+		return Vector2.new(p.X, p.Y)
 	end
 
-	local function CreateESPForEntity(ent)
+	local function isTargetValid(ent)
+		if ent.Player and not options.Targets.Players.Enabled then return false end
+		if ent.NPC and not options.Targets.NPCs.Enabled then return false end
+		if options.Teammates.Enabled and ent.Player and ent.Player.Team == LocalPlayer.Team then return false end
+		return true
+	end
+
+	local function CreateESP(ent)
 		if Reference[ent] then return end
+		if not isTargetValid(ent) then return end
 
-		if not Targets.Players.Enabled and ent.Player then return end
-		if not Targets.NPCs.Enabled and ent.NPC then return end
-		if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) then return end
+		local box = Drawing.new('Square')
+		box.ZIndex = 2
+		box.Thickness = 1
 
-		local EntityESP = {}
-		EntityESP.Main = Drawing.new('Square')
-		EntityESP.Main.Transparency = BoundingBox.Enabled and 1 or 0
-		EntityESP.Main.ZIndex = 2
-		EntityESP.Main.Filled = false
-		EntityESP.Main.Thickness = 1
-		EntityESP.Main.Color = entitylib.getEntityColor(ent, Color)
-
-		if BoundingBox.Enabled then
-			EntityESP.Border = Drawing.new('Square')
-			EntityESP.Border.Transparency = 0.35
-			EntityESP.Border.ZIndex = 1
-			EntityESP.Border.Thickness = 1
-			EntityESP.Border.Filled = false
-			EntityESP.Border.Color = Color3.new()
-
-			EntityESP.Border2 = Drawing.new('Square')
-			EntityESP.Border2.Transparency = 0.35
-			EntityESP.Border2.ZIndex = 1
-			EntityESP.Border2.Thickness = 1
-			EntityESP.Border2.Filled = Filled.Enabled
-			EntityESP.Border2.Color = Color3.new()
+		local border, border2, healthLine, healthBorder, txt, txtBkg, txtDrop, img
+		if options.BoundingBox.Enabled then
+			border = Drawing.new('Square')
+			border.ZIndex = 1
+			border.Transparency = 0.35
+			border.Thickness = 1
+			border.Color = Color3.new()
+			border2 = Drawing.new('Square')
+			border2.ZIndex = 1
+			border2.Transparency = 0.35
+			border2.Thickness = 1
+			border2.Filled = options.Filled.Enabled
+			border2.Color = Color3.new()
 		end
 
-		if HealthBar.Enabled then
-			EntityESP.HealthLine = Drawing.new('Line')
-			EntityESP.HealthLine.Thickness = 1
-			EntityESP.HealthLine.ZIndex = 2
-			EntityESP.HealthLine.Color = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
-			EntityESP.HealthBorder = Drawing.new('Line')
-			EntityESP.HealthBorder.Thickness = 3
-			EntityESP.HealthBorder.Transparency = 0.35
-			EntityESP.HealthBorder.ZIndex = 1
-			EntityESP.HealthBorder.Color = Color3.new()
+		if options.HealthBar.Enabled then
+			healthLine = Drawing.new('Line')
+			healthLine.ZIndex = 2
+			healthLine.Thickness = 2
+			healthBorder = Drawing.new('Line')
+			healthBorder.ZIndex = 1
+			healthBorder.Thickness = 3
+			healthBorder.Transparency = 0.35
+			healthBorder.Color = Color3.new()
 		end
 
-		if Name.Enabled then
-			if Background.Enabled then
-				EntityESP.TextBKG = Drawing.new('Square')
-				EntityESP.TextBKG.Transparency = 0.35
-				EntityESP.TextBKG.ZIndex = 0
-				EntityESP.TextBKG.Thickness = 1
-				EntityESP.TextBKG.Filled = true
-				EntityESP.TextBKG.Color = Color3.new()
+		if options.Name.Enabled then
+			if options.Background.Enabled then
+				txtBkg = Drawing.new('Square')
+				txtBkg.ZIndex = 0
+				txtBkg.Transparency = 0.35
+				txtBkg.Filled = true
+				txtBkg.Color = Color3.new()
 			end
-			EntityESP.Drop = Drawing.new('Text')
-			EntityESP.Drop.Color = Color3.new()
-			EntityESP.Drop.Text = ent.Player and (DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
-			EntityESP.Drop.ZIndex = 1
-			EntityESP.Drop.Center = true
-			EntityESP.Drop.Size = 20
-			EntityESP.Text = Drawing.new('Text')
-			EntityESP.Text.Text = EntityESP.Drop.Text
-			EntityESP.Text.ZIndex = 2
-			EntityESP.Text.Color = EntityESP.Main.Color
-			EntityESP.Text.Center = true
-			EntityESP.Text.Size = 20
+			txtDrop = Drawing.new('Text')
+			txtDrop.ZIndex = 1
+			txtDrop.Center = true
+			txtDrop.Color = Color3.new()
+			txtDrop.Size = 20
+
+			txt = Drawing.new('Text')
+			txt.ZIndex = 2
+			txt.Center = true
+			txt.Size = 20
 		end
 
-		Reference[ent] = EntityESP
+		beforeimage:
+		img = Drawing.new('Image')
+		img.ZIndex = 2
+		img.Data = "rbxassetid://14736249347"
+		img.Size = Vector2.new(32,32)
+
+		Reference[ent] = {box=box,border=border,border2=border2,healthLine=healthLine,
+			healthBorder=healthBorder,txt=txt,txtBkg=txtBkg,txtDrop=txtDrop,img=img}
 	end
 
-	local function RemoveESPForEntity(ent)
-		local EntityESP = Reference[ent]
-		if EntityESP then
-			for _, v in EntityESP do
-				pcall(function()
-					v.Visible = false
-					v:Remove()
-				end)
+	local function RemoveESP(ent)
+		if not Reference[ent] then return end
+		for _,obj in pairs(Reference[ent]) do
+			pcall(function()
+				obj.Visible = false
+				obj:Remove()
+			end)
+		end
+		Reference[ent] = nil
+	end
+
+	local function UpdateColor(ent)
+		local c = Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
+		local data = Reference[ent]
+		if data then
+			data.box.Color = c
+			if data.txt then data.txt.Color = c end
+		end
+	end
+
+	local function UpdateAllColors()
+		for ent,_ in pairs(Reference) do UpdateColor(ent) end
+	end
+
+	local function UpdateESP()
+		for ent,data in pairs(Reference) do
+			if not ent or not ent:FindFirstChild("RootPart") then
+				RemoveESP(ent); continue
 			end
-			Reference[ent] = nil
-		end
-	end
 
-	local function UpdateESPForEntity(ent)
-		local EntityESP = Reference[ent]
-		if not EntityESP then return end
-
-		if EntityESP.HealthLine then
-			EntityESP.HealthLine.Color = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
-		end
-		if EntityESP.Text then
-			local text = ent.Player and (DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
-			EntityESP.Text.Text = text
-			EntityESP.Drop.Text = text
-		end
-	end
-
-	local function UpdateColors()
-		local color = Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
-		for ent, v in pairs(Reference) do
-			v.Main.Color = entitylib.getEntityColor(ent, Color)
-			if v.Text then
-				v.Text.Color = v.Main.Color
+			local rp = ent.RootPart
+			local pos3d, visible = gameCamera:WorldToViewportPoint(rp.Position)
+			if options.Distance.Enabled then
+				local dist = (LocalPlayer.Character.PrimaryPart.Position - rp.Position).Magnitude
+				if dist<options.DistanceLimit.ValueMin or dist>options.DistanceLimit.ValueMax then visible=false end
 			end
-		end
-	end
 
-	local function ESPLoop()
-		for ent, esp in pairs(Reference) do
-			if Distance.Enabled then
-				local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
-				if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
-					for _, obj in esp do
-						obj.Visible = false
-					end
-					continue
+			for _,o in pairs(data) do
+				o.Visible = visible
+			end
+			if not visible then continue end
+
+			local top = ESPWorldToViewport(rp.Position + Vector3.new(0, ent.Humanoid.HipHeight, 0))
+			local bot = ESPWorldToViewport(rp.Position - Vector3.new(0, ent.Humanoid.HipHeight+1, 0))
+			local size = Vector2.new(math.abs(top.X-bot.X), math.abs(top.Y-bot.Y))
+			local pos = Vector2.new(top.X - size.X/2, top.Y - size.Y/2)
+
+			data.box.Position = pos
+			data.box.Size = size
+
+			if data.border then
+				data.border.Position = pos - Vector2.new(1, -1)
+				data.border.Size = size + Vector2.new(2,-2)
+				data.border2.Position = pos + Vector2.new(1,-1)
+				data.border2.Size = size + Vector2.new(-2,2)
+			end
+
+			if data.healthLine then
+				local hp = ent.Humanoid.Health/ent.Humanoid.MaxHealth
+				data.healthLine.From = Vector2.new(pos.X-6, pos.Y+(1-hp)*size.Y)
+				data.healthLine.To = Vector2.new(pos.X-6, pos.Y+size.Y)
+				data.healthLine.Color = Color3.fromHSV(hp/2.5, 0.89, 0.75)
+				data.healthLine.Visible = true
+			end
+
+			if data.txt then
+				local text = ent.Player and (options.DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Name
+				data.txt.Text = text
+				data.txt.Position = Vector2.new(pos.X+size.X/2, pos.Y+size.Y+5)
+				data.txtDrop.Text = text
+				data.txtDrop.Position = data.txt.Position + Vector2.new(1,1)
+				if data.txtBkg then
+					data.txtBkg.Position = data.txt.Position - Vector2.new(data.txt.TextBounds.X/2+4,0)
+					data.txtBkg.Size = data.txt.TextBounds + Vector2.new(8,4)
 				end
 			end
 
-			local rootPos, rootVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position)
-			for _, obj in esp do
-				obj.Visible = rootVis
-			end
-			if not rootVis then continue end
-
-			local topPos = gameCamera:WorldToViewportPoint((CFrame.lookAlong(ent.RootPart.Position, gameCamera.CFrame.LookVector) * CFrame.new(2, ent.HipHeight, 0)).p)
-			local bottomPos = gameCamera:WorldToViewportPoint((CFrame.lookAlong(ent.RootPart.Position, gameCamera.CFrame.LookVector) * CFrame.new(-2, -ent.HipHeight - 1, 0)).p)
-			local sizex, sizey = topPos.X - bottomPos.X, topPos.Y - bottomPos.Y
-			local posx, posy = (rootPos.X - sizex / 2),  ((rootPos.Y - sizey / 2))
-			esp.Main.Position = Vector2.new(posx, posy) // 1
-			esp.Main.Size = Vector2.new(sizex, sizey) // 1
-			if esp.Border then
-				esp.Border.Position = Vector2.new(posx - 1, posy + 1) // 1
-				esp.Border.Size = Vector2.new(sizex + 2, sizey - 2) // 1
-				esp.Border2.Position = Vector2.new(posx + 1, posy - 1) // 1
-				esp.Border2.Size = Vector2.new(sizex - 2, sizey + 2) // 1
-			end
-
-			if esp.HealthLine then
-				local healthposy = sizey * math.clamp(ent.Health / ent.MaxHealth, 0, 1)
-				esp.HealthLine.Visible = ent.Health > 0
-				esp.HealthLine.From = Vector2.new(posx - 6, posy + (sizey - (sizey - healthposy))) // 1
-				esp.HealthLine.To = Vector2.new(posx - 6, posy) // 1
-				esp.HealthBorder.From = Vector2.new(posx - 6, posy + 1) // 1
-				esp.HealthBorder.To = Vector2.new(posx - 6, (posy + sizey) - 1) // 1
-			end
-
-			if esp.Text then
-				esp.Text.Position = Vector2.new(posx + (sizex / 2), posy + (sizey - 28)) // 1
-				esp.Drop.Position = esp.Text.Position + Vector2.new(1, 1)
-				if esp.TextBKG then
-					esp.TextBKG.Size = esp.Text.TextBounds + Vector2.new(8, 4)
-					esp.TextBKG.Position = esp.Text.Position - Vector2.new(4 + (esp.Text.TextBounds.X / 2), 0)
-				end
+			if data.img then
+				data.img.Position = Vector2.new(pos.X+size.X/2-16, pos.Y-32-5)
 			end
 		end
 	end
 
-	local function AddAllEntities()
-		for _, ent in pairs(workspace:GetChildren()) do
-			if ent:FindFirstChild("RootPart") and (ent.Player or ent.NPC) then
-				CreateESPForEntity(ent)
+	local function AddAll()
+		for _, plr in pairs(Players:GetPlayers()) do
+			local char = plr.Character
+			if char and char:FindFirstChild("RootPart") and char:FindFirstChild("Humanoid") then
+				char.Player = plr
+				CreateESP(char)
 			end
-		end
-	end
-
-	local function ClearAll()
-		for ent in pairs(Reference) do
-			RemoveESPForEntity(ent)
 		end
 	end
 
 	local module = vape.Categories.Render:CreateModule({
 		Name = "ESP",
 		Function = function(enabled)
-			ESPEnabled = enabled
 			if enabled then
-				AddAllEntities()
-				RenderStepped = RunService.RenderStepped:Connect(function()
-					ESPLoop()
-				end)
+				AddAll()
+				RenderStepped = RunService.RenderStepped:Connect(UpdateESP)
 			else
-				if RenderStepped then
-					RenderStepped:Disconnect()
-					RenderStepped = nil
-				end
-				ClearAll()
+				if RenderStepped then RenderStepped:Disconnect() end
+				for ent in pairs(Reference) do RemoveESP(ent) end
 			end
 		end,
-		Tooltip = "Show ESP on players and NPCs"
+		Tooltip = "2D/3D/Skeleton ESP with boxes, health, name & image"
 	})
+
+	module:CreateDropdown({
+		Name = "Mode",
+		List = {"Drawing2D"},
+		Function = function(v) Method = v end
+	})
+	module:CreateToggle({Name = "Bounding Box", Default = true, Function = function() end})
+	module:CreateToggle({Name = "Filled", Function = function() end})
+	module:CreateToggle({Name = "Health Bar", Default = true, Function = function() end})
+	module:CreateToggle({Name = "Name", Default = true, Function = function() end})
+	module:CreateToggle({Name = "Use DisplayName", Default = false, Function = function() end})
+	module:CreateToggle({Name = "Background", Default = true, Function = function() end})
+	module:CreateToggle({Name = "Priority Only", Default = false, Function = function() end})
+	module:CreateToggle({Name = "Distance Check", Default = false, Function = function() end})
+	module:CreateTwoSlider({Name = "Player Distance", Min = 0, Max = 1000, DefaultMin = 0, DefaultMax = 1000, Darker = true})
 
 	module:CreateColorSlider({
 		Name = "Color",
-		Function = function(h, s, v)
-			Color.Hue = h
-			Color.Sat = s
-			Color.Value = v
-			UpdateColors()
+		DefaultHue = 0.35,
+		Function = function(h,s,v)
+			Color.Hue = h; Color.Sat = s; Color.Value = v
+			UpdateAllColors()
 		end
 	})
-
 end)
 
 
