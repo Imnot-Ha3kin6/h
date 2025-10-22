@@ -1,289 +1,324 @@
--- load linoria ui library (works on mobile)
-local repo = 'https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/'
+-- load rayfield ui library (best for mobile)
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
-local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
-local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
-local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
-
--- create window with custom styling
-local Window = Library:CreateWindow({
-    Title = '✨ cool beanz menu v3 ✨',
-    Center = true,
-    AutoShow = true,
-    TabPadding = 8,
-    MenuFadeTime = 0.3
+-- create window with custom theme
+local Window = Rayfield:CreateWindow({
+   Name = "✨ cool beanz menu v3 ✨",
+   LoadingTitle = "cool beanz menu",
+   LoadingSubtitle = "by cool beanz",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "cool_beanz_menu",
+      FileName = "config"
+   },
+   Discord = {
+      Enabled = false,
+      Invite = "noinvitelink",
+      RememberJoins = true
+   },
+   KeySystem = false,
+   KeySettings = {
+      Title = "cool beanz menu",
+      Subtitle = "Key System",
+      Note = "no key needed",
+      FileName = "Key",
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"beanz"}
+   }
 })
 
--- custom theme setup
-Library:SetWatermarkVisibility(false)
-
--- add watermark with custom text
-Library:SetWatermark('cool beanz menu v3 💜 | ' .. os.date('%H:%M:%S'))
-
--- update watermark every second
-task.spawn(function()
-    while true do
-        wait(1)
-        Library:SetWatermark('cool beanz menu v3 💜 | ' .. os.date('%H:%M:%S'))
-    end
-end)
-
--- create tabs with icons
-local Tabs = {
-    Scripts = Window:AddTab('🔥 scripts'),
-    Games = Window:AddTab('🎮 games'),
-    Reskins = Window:AddTab('✨ reskins'),
-    ['UI Settings'] = Window:AddTab('⚙️ settings'),
-}
-
--- add welcome message
-Library:Notify('welcome to cool beanz menu v3 💜', 3)
-
--- scripts tab
-local ScriptsGroupBox = Tabs.Scripts:AddLeftGroupbox('🌐 universal scripts')
-
-ScriptsGroupBox:AddButton({
-    Text = '🔥 infinite yield reborn',
-    Func = function()
-        loadstring(game:HttpGet(('https://raw.githubusercontent.com/mxsynry/infiniteyield-reborn/refs/heads/scriptblox/source' or 'https://mxsynry.github.io/storage/iyrbackup/legacy/scriptblox/source')))()
-        Library:Notify('infinite yield reborn loaded twin 🙏', 3)
-    end,
-    DoubleClick = false,
-    Tooltip = 'universal admin commands reborn'
+-- custom theme colors
+Rayfield:LoadTheme({
+    Background = Color3.fromRGB(73, 73, 155),
+    MainColor = Color3.fromRGB(40, 95, 135),
+    AccentColor = Color3.fromRGB(135, 175, 255),
+    OutlineColor = Color3.fromRGB(139, 139, 139),
+    FontColor = Color3.fromRGB(140, 210, 255)
 })
 
-ScriptsGroupBox:AddButton({
-    Text = '🐋 orca universal',
-    Func = function()
-        loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/richie0866/orca/master/public/latest.lua"))()
-        Library:Notify('orca universal loaded gng 💀', 3)
-    end,
-    DoubleClick = false,
-    Tooltip = 'free and open-source universal script'
+-- create tabs
+local ScriptsTab = Window:CreateTab("🔥 scripts", nil)
+local GamesTab = Window:CreateTab("🎮 games", nil)
+local ReskinsTab = Window:CreateTab("✨ reskins", nil)
+
+-- scripts tab sections
+local UniversalSection = ScriptsTab:CreateSection("🌐 universal scripts")
+
+ScriptsTab:CreateButton({
+   Name = "🔥 infinite yield reborn",
+   Callback = function()
+      loadstring(game:HttpGet(('https://raw.githubusercontent.com/mxsynry/infiniteyield-reborn/refs/heads/scriptblox/source' or 'https://mxsynry.github.io/storage/iyrbackup/legacy/scriptblox/source')))()
+      Rayfield:Notify({
+         Title = "infinite yield reborn",
+         Content = "loaded twin 🙏",
+         Duration = 3,
+         Image = nil,
+      })
+   end,
 })
 
-ScriptsGroupBox:AddButton({
-    Text = '🌟 scriptcentral hub',
-    Func = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/ScriptCentral-br/SCU/refs/heads/main/sc.md",true))()
-        Library:Notify('scriptcentral loaded twin 💀', 3)
-    end,
-    DoubleClick = false,
-    Tooltip = 'tons of game scripts in one hub'
+ScriptsTab:CreateButton({
+   Name = "🐋 orca universal",
+   Callback = function()
+      loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/richie0866/orca/master/public/latest.lua"))()
+      Rayfield:Notify({
+         Title = "orca universal",
+         Content = "loaded gng 💀",
+         Duration = 3,
+         Image = nil,
+      })
+   end,
 })
 
-ScriptsGroupBox:AddButton({
-    Text = '💙 bluered hub',
-    Func = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Shife2/BlueRed-Script/main/new.lua"))()
-        Library:Notify('bluered hub loaded gng 100+ games 🙏', 3)
-    end,
-    DoubleClick = false,
-    Tooltip = '100+ games supported'
+ScriptsTab:CreateButton({
+   Name = "🌟 scriptcentral hub",
+   Callback = function()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/ScriptCentral-br/SCU/refs/heads/main/sc.md",true))()
+      Rayfield:Notify({
+         Title = "scriptcentral",
+         Content = "loaded twin 💀",
+         Duration = 3,
+         Image = nil,
+      })
+   end,
 })
 
-local ScriptsGroupBox2 = Tabs.Scripts:AddRightGroupbox('🛠️ utility scripts')
-
-ScriptsGroupBox2:AddButton({
-    Text = '👁️ esp players',
-    Func = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xt-el/ESP-Players/refs/heads/main/ESP"))()
-        Library:Notify('esp loaded twin see everyone now 😭', 3)
-    end,
-    DoubleClick = false,
-    Tooltip = 'see all players through walls'
+ScriptsTab:CreateButton({
+   Name = "💙 bluered hub",
+   Callback = function()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/Shife2/BlueRed-Script/main/new.lua"))()
+      Rayfield:Notify({
+         Title = "bluered hub",
+         Content = "loaded gng 100+ games 🙏",
+         Duration = 3,
+         Image = nil,
+      })
+   end,
 })
 
-ScriptsGroupBox2:AddButton({
-    Text = '✈️ fly script',
-    Func = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/JNHHGaming/Fly/refs/heads/main/Fly",true))()
-        Library:Notify('fly script loaded gng 🔥', 3)
-    end,
-    DoubleClick = false,
-    Tooltip = 'universal fly script'
+local UtilitySection = ScriptsTab:CreateSection("🛠️ utility scripts")
+
+ScriptsTab:CreateButton({
+   Name = "👁️ esp players",
+   Callback = function()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/xt-el/ESP-Players/refs/heads/main/ESP"))()
+      Rayfield:Notify({
+         Title = "esp players",
+         Content = "see everyone now 😭",
+         Duration = 3,
+         Image = nil,
+      })
+   end,
 })
 
-ScriptsGroupBox2:AddButton({
-    Text = '💫 fling script',
-    Func = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/K1LAS1K/Ultimate-Fling-GUI/main/flingscript.lua"))()
-        Library:Notify('fling script loaded twin lets troll 😭', 3)
-    end,
-    DoubleClick = false,
-    Tooltip = 'ultimate fling gui'
+ScriptsTab:CreateButton({
+   Name = "✈️ fly script",
+   Callback = function()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/JNHHGaming/Fly/refs/heads/main/Fly",true))()
+      Rayfield:Notify({
+         Title = "fly script",
+         Content = "loaded gng 🔥",
+         Duration = 3,
+         Image = nil,
+      })
+   end,
 })
 
--- add divider
-ScriptsGroupBox2:AddDivider()
-
-ScriptsGroupBox2:AddLabel('more scripts coming soon 💜')
-
--- games tab
-local ArsenalBox = Tabs.Games:AddLeftGroupbox('🔫 arsenal')
-
-ArsenalBox:AddButton({
-    Text = '🌟 insanity.xyz',
-    Func = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/jaysterrz/insanity.xyz/refs/heads/main/InsanityLoader.lua"))()
-        Library:Notify('insanity.xyz loaded twin 🙏', 3)
-    end,
-    DoubleClick = false,
-    Tooltip = 'insanity arsenal script'
+ScriptsTab:CreateButton({
+   Name = "💫 fling script",
+   Callback = function()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/K1LAS1K/Ultimate-Fling-GUI/main/flingscript.lua"))()
+      Rayfield:Notify({
+         Title = "fling script",
+         Content = "lets troll twin 😭",
+         Duration = 3,
+         Image = nil,
+      })
+   end,
 })
 
-ArsenalBox:AddButton({
-    Text = '😂 timmys hub',
-    Func = function()
-        loadstring(game:HttpGet('https://raw.githubusercontent.com/WinzeTim/timmyhack2/refs/heads/main/arsenal.lua'))()
-        Library:Notify('timmys hub loaded gng 💀', 3)
-    end,
-    DoubleClick = false,
-    Tooltip = 'timmys hub lmaoo'
+-- games tab sections
+local ArsenalSection = GamesTab:CreateSection("🔫 arsenal")
+
+GamesTab:CreateButton({
+   Name = "🌟 insanity.xyz",
+   Callback = function()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/jaysterrz/insanity.xyz/refs/heads/main/InsanityLoader.lua"))()
+      Rayfield:Notify({
+         Title = "insanity.xyz",
+         Content = "loaded twin 🙏",
+         Duration = 3,
+         Image = nil,
+      })
+   end,
 })
 
-local TSBBox = Tabs.Games:AddRightGroupbox('💪 tsb')
-
-TSBBox:AddButton({
-    Text = '📊 death counter',
-    Func = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/louismich4el/ItsLouisPlayz-Scripts/main/TSB%20Death%20Counter%20Identifier.lua"))()
-        Library:Notify('death counter loaded twin 🙏', 3)
-    end,
-    DoubleClick = false,
-    Tooltip = 'see who struggling lmao'
+GamesTab:CreateButton({
+   Name = "😂 timmys hub",
+   Callback = function()
+      loadstring(game:HttpGet('https://raw.githubusercontent.com/WinzeTim/timmyhack2/refs/heads/main/arsenal.lua'))()
+      Rayfield:Notify({
+         Title = "timmys hub",
+         Content = "loaded gng 💀",
+         Duration = 3,
+         Image = nil,
+      })
+   end,
 })
 
-TSBBox:AddButton({
-    Text = '⚡ instant transmission',
-    Func = function()
-        local mouse = game.Players.LocalPlayer:GetMouse()
-        local tool = Instance.new("Tool")
-        tool.RequiresHandle = false
-        tool.Name = "instant transmission"
+local TSBSection = GamesTab:CreateSection("💪 tsb")
 
-        local teleportAnimationId = "rbxassetid://15957361339"
-        local teleportSoundId = "rbxassetid://5066021887"
-
-        local player = game.Players.LocalPlayer
-        local character = player.Character or player.CharacterAdded:Wait()
-        local humanoid = character:WaitForChild("Humanoid")
-        local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
-
-        local teleportAnimation = Instance.new("Animation")
-        teleportAnimation.AnimationId = teleportAnimationId
-        local teleportTrack = animator:LoadAnimation(teleportAnimation)
-
-        local teleportSound = Instance.new("Sound")
-        teleportSound.SoundId = teleportSoundId
-        teleportSound.Parent = character:WaitForChild("HumanoidRootPart")
-
-        tool.Activated:Connect(function()
-            teleportTrack:Play()
-            teleportSound:Play()
-            local pos = mouse.Hit + Vector3.new(0, 2.5, 0)
-            pos = CFrame.new(pos.X, pos.Y, pos.Z)
-            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pos
-        end)
-
-        tool.Parent = player.Backpack
-        
-        Library:Notify('tool added to backpack 💀', 3)
-    end,
-    DoubleClick = false,
-    Tooltip = 'teleport to cursor location'
+GamesTab:CreateButton({
+   Name = "📊 death counter",
+   Callback = function()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/louismich4el/ItsLouisPlayz-Scripts/main/TSB%20Death%20Counter%20Identifier.lua"))()
+      Rayfield:Notify({
+         Title = "death counter",
+         Content = "loaded twin 🙏",
+         Duration = 3,
+         Image = nil,
+      })
+   end,
 })
 
-local BedwarsBox = Tabs.Games:AddLeftGroupbox('🛏️ bedwars')
+GamesTab:CreateButton({
+   Name = "⚡ instant transmission",
+   Callback = function()
+      local mouse = game.Players.LocalPlayer:GetMouse()
+      local tool = Instance.new("Tool")
+      tool.RequiresHandle = false
+      tool.Name = "instant transmission"
 
-BedwarsBox:AddButton({
-    Text = '🌙 vape v4 voidware',
-    Func = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/VapeVoidware/VWExtra/main/installer.lua", true))()
-        Library:Notify('vape v4 loaded gng 🔥', 3)
-    end,
-    DoubleClick = false,
-    Tooltip = 'best bedwars client ngl'
+      local teleportAnimationId = "rbxassetid://15957361339"
+      local teleportSoundId = "rbxassetid://5066021887"
+
+      local player = game.Players.LocalPlayer
+      local character = player.Character or player.CharacterAdded:Wait()
+      local humanoid = character:WaitForChild("Humanoid")
+      local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
+
+      local teleportAnimation = Instance.new("Animation")
+      teleportAnimation.AnimationId = teleportAnimationId
+      local teleportTrack = animator:LoadAnimation(teleportAnimation)
+
+      local teleportSound = Instance.new("Sound")
+      teleportSound.SoundId = teleportSoundId
+      teleportSound.Parent = character:WaitForChild("HumanoidRootPart")
+
+      tool.Activated:Connect(function()
+         teleportTrack:Play()
+         teleportSound:Play()
+         local pos = mouse.Hit + Vector3.new(0, 2.5, 0)
+         pos = CFrame.new(pos.X, pos.Y, pos.Z)
+         game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pos
+      end)
+
+      tool.Parent = player.Backpack
+      
+      Rayfield:Notify({
+         Title = "instant transmission",
+         Content = "tool added to backpack 💀",
+         Duration = 3,
+         Image = nil,
+      })
+   end,
 })
 
-local BladeBallBox = Tabs.Games:AddRightGroupbox('⚔️ blade ball')
+local BedwarsSection = GamesTab:CreateSection("🛏️ bedwars")
 
-BladeBallBox:AddButton({
-    Text = '🔮 shadow blade ball',
-    Func = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/ShadowBey01/SHWX-Team-Rise-Scripts/refs/heads/main/SomeStuff/HzShadow%20Lua%20Obfuscator/protected-file-1.lua"))()
-        Library:Notify('shadow blade ball loaded twin 🙏', 3)
-    end,
-    DoubleClick = false,
-    Tooltip = 'shadow team blade ball script'
+GamesTab:CreateButton({
+   Name = "🌙 vape v4 voidware",
+   Callback = function()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/VapeVoidware/VWExtra/main/installer.lua", true))()
+      Rayfield:Notify({
+         Title = "vape v4",
+         Content = "loaded gng 🔥",
+         Duration = 3,
+         Image = nil,
+      })
+   end,
 })
 
--- add spacing
-BladeBallBox:AddDivider()
-BladeBallBox:AddLabel('more game scripts coming soon 💜')
+local BladeBallSection = GamesTab:CreateSection("⚔️ blade ball")
+
+GamesTab:CreateButton({
+   Name = "🔮 shadow blade ball",
+   Callback = function()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/ShadowBey01/SHWX-Team-Rise-Scripts/refs/heads/main/SomeStuff/HzShadow%20Lua%20Obfuscator/protected-file-1.lua"))()
+      Rayfield:Notify({
+         Title = "shadow blade ball",
+         Content = "loaded twin 🙏",
+         Duration = 3,
+         Image = nil,
+      })
+   end,
+})
 
 -- reskins tab
-local SaitamaBox = Tabs.Reskins:AddLeftGroupbox('👊 saitama reskins')
+local SaitamaSection = ReskinsTab:CreateSection("👊 saitama reskins")
 
-SaitamaBox:AddButton({
-    Text = '🔴 kj reskin',
-    Func = function()
-        getgenv().Moveset_Settings = {
-            ["ExecuteOnRespawn"] = true,
-            ["TSBStyleNotification"] = true,
-            ["UseOldCollateralRuin"] = false,
-            ["NoWarning"] = true,
-            ["NoDeathCounterImages"] = true,
-            ["NoBarrageArms"] = true,
-            ["NoPreysPerilAttract"] = true,
-            ["NoWalls"] = false,
-            ["NoTrees"] = false,
-            ["RavageTool"] = false,
-            ["AdrenalineBoostTool"] = false,
-            ["Adrenaline_Multiplier"] = 2,
-            ["CustomUppercutAnimation"] = true,
-            ["CustomDownslamAnimation"] = true,
-            ["CustomIdleAnimation"] = true,
-            ["UltNames"] = { "20 series", },
-            ["MoveNames"] = {
-                ["Normal Punch"] = "ravaging kick",
-                ["Consecutive Punches"] = "fist fusillade",
-                ["Shove"] = "swift sweep",
-                ["Uppercut"] = "collateral storm",
-                ["Death Counter"] = "sudden strike",
-                ["Table Flip"] = "stoic bomb",
-                ["Serious Punch"] = "limited flex works",
-                ["Omni Directional Punch"] = "omni directional fists"
-            }
-        }
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/skibiditoiletfan2007/BaldyToKJ/refs/heads/main/Latest.lua"))()
-        Library:Notify('kj reskin loaded twin you kj now 💀', 3)
-    end,
-    DoubleClick = false,
-    Tooltip = 'turn saitama into kj'
+ReskinsTab:CreateButton({
+   Name = "🔴 kj reskin",
+   Callback = function()
+      getgenv().Moveset_Settings = {
+         ["ExecuteOnRespawn"] = true,
+         ["TSBStyleNotification"] = true,
+         ["UseOldCollateralRuin"] = false,
+         ["NoWarning"] = true,
+         ["NoDeathCounterImages"] = true,
+         ["NoBarrageArms"] = true,
+         ["NoPreysPerilAttract"] = true,
+         ["NoWalls"] = false,
+         ["NoTrees"] = false,
+         ["RavageTool"] = false,
+         ["AdrenalineBoostTool"] = false,
+         ["Adrenaline_Multiplier"] = 2,
+         ["CustomUppercutAnimation"] = true,
+         ["CustomDownslamAnimation"] = true,
+         ["CustomIdleAnimation"] = true,
+         ["UltNames"] = { "20 series", },
+         ["MoveNames"] = {
+            ["Normal Punch"] = "ravaging kick",
+            ["Consecutive Punches"] = "fist fusillade",
+            ["Shove"] = "swift sweep",
+            ["Uppercut"] = "collateral storm",
+            ["Death Counter"] = "sudden strike",
+            ["Table Flip"] = "stoic bomb",
+            ["Serious Punch"] = "limited flex works",
+            ["Omni Directional Punch"] = "omni directional fists"
+         }
+      }
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/skibiditoiletfan2007/BaldyToKJ/refs/heads/main/Latest.lua"))()
+      Rayfield:Notify({
+         Title = "kj reskin",
+         Content = "you kj now twin 💀",
+         Duration = 3,
+         Image = nil,
+      })
+   end,
 })
 
-SaitamaBox:AddButton({
-    Text = '🔵 gojo reskin',
-    Func = function()
-        getgenv().morph = true
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/skibiditoiletfan2007/BaldyToSorcerer/refs/heads/main/LatestV2.lua"))()
-        Library:Notify('gojo reskin loaded gng you gojo now 🙏', 3)
-    end,
-    DoubleClick = false,
-    Tooltip = 'turn saitama into gojo'
+ReskinsTab:CreateButton({
+   Name = "🔵 gojo reskin",
+   Callback = function()
+      getgenv().morph = true
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/skibiditoiletfan2007/BaldyToSorcerer/refs/heads/main/LatestV2.lua"))()
+      Rayfield:Notify({
+         Title = "gojo reskin",
+         Content = "you gojo now gng 🙏",
+         Duration = 3,
+         Image = nil,
+      })
+   end,
 })
 
--- add info section
-local InfoBox = Tabs.Reskins:AddRightGroupbox('ℹ️ info')
+local InfoSection = ReskinsTab:CreateSection("ℹ️ info")
 
-InfoBox:AddLabel('cool beanz menu v3')
-InfoBox:AddLabel('made with 💜')
-InfoBox:AddDivider()
-InfoBox:AddLabel('status: undetected ✅')
-InfoBox:AddLabel('mobile support: yes 📱')
-InfoBox:AddDivider()
-InfoBox:AddLabel('enjoy the menu twin 🙏')
+ReskinsTab:CreateLabel("cool beanz menu v3")
+ReskinsTab:CreateLabel("made with 💜")
+ReskinsTab:CreateLabel("status: undetected ✅")
+ReskinsTab:CreateLabel("mobile support: yes 📱")
 
 -- animation lock script
 local Players = game:GetService("Players")
@@ -322,33 +357,10 @@ if LocalPlayer.Character then
 end
 LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
 
--- ui settings
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({})
-
-ThemeManager:SetFolder('cool_beanz_menu')
-SaveManager:SetFolder('cool_beanz_menu/configs')
-
--- add cool beanz custom theme to built-in themes
-local httpService = game:GetService('HttpService')
-ThemeManager.BuiltInThemes['Cool Beanz'] = { 
-    9, 
-    httpService:JSONDecode('{"FontColor":"8cd2ff","MainColor":"285f87","AccentColor":"87afff","BackgroundColor":"49499b","OutlineColor":"8b8b8b"}') 
-}
-
-SaveManager:BuildConfigSection(Tabs['UI Settings'])
-ThemeManager:ApplyToTab(Tabs['UI Settings'])
-
--- apply cool beanz theme by default
-ThemeManager:ApplyTheme('Cool Beanz')
-
--- load auto config
-SaveManager:LoadAutoloadConfig()
-
--- final notification
-task.wait(1)
-Library:Notify('✨ cool beanz menu v3 loaded ✨', 5)
-Library:Notify('lets get it twin 🔥💜', 4)
+-- welcome notification
+Rayfield:Notify({
+   Title = "✨ cool beanz menu v3 ✨",
+   Content = "loaded twin lets get it 🔥💜",
+   Duration = 5,
+   Image = nil,
+})
